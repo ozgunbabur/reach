@@ -165,6 +165,9 @@ object IOResolver {
     case _ => None
   }
 
+  // Check to see if a Mention has input
+  def hasInput(m: Mention): Boolean = getOutput(m).nonEmpty
+
   // Check to see if a Mention has output
   def hasOutput(m: Mention): Boolean = getOutput(m).nonEmpty
 }
