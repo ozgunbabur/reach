@@ -16,16 +16,13 @@ abstract class IO {
     case that: IO => that.id.equalsIgnoreCase(this.id) && that.mods.equals(this.mods)
     case _ => false
   }
-}
-
-case class Input(id: String, mods: Set[String], text: String) extends IO {
 
   // Check to see if this Input is the Input of some Mention
-  // Attempts to use custom equality def of parent class (text doesn't need to match)
-  def isInputOf(m: Mention): Boolean = super.equals(IOResolver.getInput(m).get)
+  // Uses custom equality def (text doesn't need to match)
+  def isInputOf(m: Mention): Boolean = this.equals(IOResolver.getInput(m).get)
   // Check to see if this Input is the Output of some Mention
-  // Attempts to use custom equality def of parent class (text doesn't need to match)
-  def isOutputOf(m: Mention): Boolean = super.equals(IOResolver.getOutput(m).get)
+  // Uses custom equality def (text doesn't need to match)
+  def isOutputOf(m: Mention): Boolean = this.equals(IOResolver.getOutput(m).get)
 
   def isFuzzyOutputOf(m: Mention): Boolean = {
     val out = IOResolver.getOutput(m).get
@@ -36,14 +33,6 @@ case class Input(id: String, mods: Set[String], text: String) extends IO {
       case _ => false
     }
   }
-}
-
-case class Output(id: String, mods: Set[String], text: String) extends IO {
-  // Check to see if this Output is the Input of some Mention
-  // Attempts to use custom equality def of parent class
-  def isInputOf(m: Mention): Boolean = super.equals(IOResolver.getInput(m).get)
-  // Check to see if this Output is the Output of some Mention
-  def isOutputOf(m: Mention): Boolean = super.equals(IOResolver.getOutput(m).get)
 
   def isFuzzyInputOf(m: Mention): Boolean = {
     val input = IOResolver.getInput(m).get
@@ -56,9 +45,28 @@ case class Output(id: String, mods: Set[String], text: String) extends IO {
   }
 }
 
+case class Input(id: String, mods: Set[String], text: String) extends IO {
+
+}
+
+case class Output(id: String, mods: Set[String], text: String) extends IO {
+
+}
+
 object IOResolver {
 
-  def getGroundingIDasString(m: Mention): String = m.toBioMention.xref.get.printString
+  def getGroundingIDasString(m: Mention): String = {
+
+    val bm = m.toBioMention
+      bm match {
+        case tb : BioTextBoundMention => tb.xref.get.printString
+        // recursively unpack this guy
+        case hasPatient if hasPatient.arguments.contains("controlled") || hasPatient.arguments.contains("theme") =>
+          //Seq(hasControlled.label, getGroundingIDasString(hasControlled.arguments("controlled").head)).flatten.mkString("+")
+          val patient = if (hasPatient.arguments contains "controlled") hasPatient.arguments("controlled").head else hasPatient.arguments("theme").head
+          getGroundingIDasString(patient)
+      }
+  }
 
   // Get labels for PTM an Mutant mods
   def getRelevantModifications(m: Mention): Set[String] =
@@ -81,7 +89,7 @@ object IOResolver {
       Some(Input(id, mods, text))
 
     // Is it an BioEventMention with a theme?
-    case bemWithTheme: BioEventMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
+    case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
       // return the grounding id for the theme
       val m = bemWithTheme.arguments("theme").head
       val id = getGroundingIDasString(m)
@@ -94,7 +102,7 @@ object IOResolver {
       Some(Input(id, mods, text))
 
     // Do we have a regulation?
-    case reg : BioRelationMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
+    case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
       val text = m.text
@@ -127,7 +135,7 @@ object IOResolver {
     }
 
     // Is it an BioEventMention with a theme?
-    case bemWithTheme: BioEventMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
+    case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
       // return the grounding id for the theme
       val m = bemWithTheme.arguments("theme").head
       val id = getGroundingIDasString(m)
@@ -140,7 +148,7 @@ object IOResolver {
       Some(Output(id, mods, text))
 
     // Do we have a regulation?
-    case reg : BioRelationMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
+    case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
       val text = m.text
