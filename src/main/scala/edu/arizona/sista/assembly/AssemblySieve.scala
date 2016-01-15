@@ -1,13 +1,15 @@
 package edu.arizona.sista.assembly
 
 import edu.arizona.sista.odin._
+import edu.arizona.sista.reach.RuleReader
 import edu.arizona.sista.reach.mentions.BioRelationMention
 
 
 trait AssemblySieve {
 
   // the label to be used by RelationMentions constructed during assembly
-  val label = Seq("Assembly")
+  val label = "Assembly"
+  val labels = Seq(label)
   // the name of the sieve
   def name = this.getClass.getName
 
@@ -40,7 +42,7 @@ class ExactIOSieve extends AssemblySieve {
           // mention 2's input is coming from the output of mention 1
           case (incoming, outgoing) if m1Output.isInputOf(m2) =>
             // the assembly link
-            new BioRelationMention(labels = this.label,
+            new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
@@ -49,7 +51,7 @@ class ExactIOSieve extends AssemblySieve {
           // mention 1's input is coming from the output of mention 2
           case (outgoing, incoming) if m2Output.isInputOf(m1) =>
             // the assembly link
-            new BioRelationMention(labels = this.label,
+            new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
@@ -88,7 +90,7 @@ class ApproximateIOSieve extends AssemblySieve {
           // mention 2's input is coming from the output of mention 1
           case (incoming, outgoing) if m1Output.isFuzzyInputOf(m2) =>
             // the assembly link
-            new BioRelationMention(labels = this.label,
+            new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
@@ -97,7 +99,7 @@ class ApproximateIOSieve extends AssemblySieve {
           // mention 1's input is coming from the output of mention 2
           case (outgoing, incoming) if m2Output.isFuzzyInputOf(m1) =>
             // the assembly link
-            new BioRelationMention(labels = this.label,
+            new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
@@ -117,11 +119,25 @@ class ApproximateIOSieve extends AssemblySieve {
 class PrepositionLinkSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
+
     // read rules and initialize state with existing mentions
-    // TODO read preps in from config?
+    val rulesPath = "/edu/arizona/sista/assembly/grammar/assembly.yml"
+    val rules:String = RuleReader.readResource(rulesPath)
+    val ee = ExtractorEngine(rules)
+    // the mentions found by REACH
+    val oldState = State(mentions)
+    // since we break a paper into sections, we'll need to group the mentions by doc
     // rule set only produces target RelationMentions
-    // TODO
-    AssemblyGraph(Nil, "") // return placeholder
+    val assembledMentions =
+      mentions
+        .groupBy(_.document)
+        .flatMap(pair => ee.extractFrom(pair._1, oldState))
+        // only return assembly mentions
+        .filter(_ matches this.label)
+        .map(_.asInstanceOf[RelationMention])
+        .toVector
+    // return placeholder
+    AssemblyGraph(assembledMentions, this.name)
   }
 }
 
