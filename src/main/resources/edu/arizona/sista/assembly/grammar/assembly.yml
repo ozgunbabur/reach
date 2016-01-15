@@ -1,0 +1,75 @@
+# a preliminary taxonomy for assembly
+taxonomy:
+  - Assembly:
+    # for pairs that are directly (immediately) connected
+    # difficult to know from odin rules alone, but not impossible
+    - DirectConnection
+    # for pairs that are indirectly (not immediately) connected
+    - IndirectConnection
+
+# vars for assembly sieve
+vars:
+  mylabel: "Assembly"
+  deprulepriority: "1"
+  surfacerulepriority: "2"
+  incomingbeforetimeprep: "/^<prep_(before|prior_to)$/"
+  incomingafterimeprep: "/^<prep_(after|following)$/"
+  incomingtype: "BioChemicalEntity"
+  outgoingtype: "BioChemicalEntity"
+  beforelemmasyns: "/^before|prior|precede$/"
+  afterlemmasyns: "/^follow|after$/"
+
+# rules for assembly sieve
+rules:
+   # Event rules
+   - name: assembly-prep-syntax-1
+     label: ${mylabel}
+     priority: ${deprulepriority}
+     example: "MEK is ubiquitinated before the phosphorylation of KRAS.
+     pattern: |
+       before:${outgoingtype}
+       # before the X
+       after:${incomingtype} = ${incomingbeforetimeprep}
+
+   - name: assembly-prep-syntax-2
+     label: ${mylabel}
+     priority: ${deprulepriority}
+     example: "MEK is ubiquitinated following the phosphorylation of KRAS.
+     pattern: |
+       after:${incomingtype}
+       # after X
+       before:${outgoingtype} = ${incomingaftertimeprep}
+
+   - name: assembly-prep-syntax-3
+     label: DirectConnection
+     priority: ${deprulepriority}
+     example: "MEK is ubiquitinated after the phosphorylation of KRAS."
+     pattern: |
+       before:${outgoingtype}
+       after:${incomingtype} = <prep_due_to | <prep_because_of
+
+   # finds a direct connection
+   - name: assembly-prep-surface-1
+     example: "MEK is ubiquitinated immediately following the phosphorylation of KRAS."
+     label: DirectConnection
+     type: token
+     priority: ${surfacerulepriority}
+     pattern: |
+       # "A precedes B" pattern
+       @before:${incomingtype} [lemma=/^immediate|direct$/] [lemma=${beforelemmas}] [tag=DT]? @after:${outgoingtype}
+       |
+       # "A follows B" pattern
+       @before:${incomingtype} [lemma=/^immediate|direct$/] [lemma=${afterlemmasyns}] [tag=DT]? @after:${outgoingtype}
+
+   # finds a direct connection
+   - name: assembly-prep-surface-2
+     example: "MEK is ubiquitinated following the phosphorylation of KRAS."
+     label: ${mylabel}
+     type: token
+     priority: ${surfacerulepriority}
+     pattern: |
+       # "A precedes B" pattern
+       @before:${incomingtype} [lemma=/^before|prior|precede$/] [tag=DT]? @after:${outgoingtype}
+       |
+       # "A follows B" pattern
+       @before:${incomingtype} [lemma=/^follow|after$/] [tag=DT]? @after:${outgoingtype}
