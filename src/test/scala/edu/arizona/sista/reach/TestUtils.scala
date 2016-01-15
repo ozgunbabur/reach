@@ -30,7 +30,7 @@ object TestUtils {
 
   def getEntities(sentence: String, verbose:Boolean = false):Seq[BioMention] = {
     val doc = testReach.mkDoc(sentence, docId, chunkId)
-    // Get only entities (after modficationEngine)
+    // Get only entities (after modificationEngine)
     val result = Try(testReach.extractEntitiesFrom(doc))
     if(! result.isSuccess)
       throw new RuntimeException("ERROR: getBioMentions failed on sentence: " + sentence)
