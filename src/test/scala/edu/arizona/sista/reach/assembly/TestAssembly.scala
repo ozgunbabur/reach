@@ -1,8 +1,9 @@
 package edu.arizona.sista.reach.assembly
 
+import edu.arizona.sista.reach.AssemblyTests
 import edu.arizona.sista.reach.TestUtils._
 import org.scalatest.{Matchers, FlatSpec}
-import edu.arizona.sista.assembly.IOResolver
+import edu.arizona.sista.assembly.{IO, IOResolver}
 
 class TestAssembly extends FlatSpec with Matchers {
 
@@ -15,18 +16,18 @@ class TestAssembly extends FlatSpec with Matchers {
   val regs = mentions.filter(_ matches "Positive_regulation")
   val ubiq1Input = IOResolver.getInput(ubiqs.head).get
 
-  text should "contain 2 ubiquitinations that are NOT exactly equal" in {
+  text should "contain 2 ubiquitinations that are NOT exactly equal" taggedAs(AssemblyTests) in {
     // there should be two ubiquitinations
     ubiqs should have size (2)
     // these are not true equivalent entities
     ubiq1Input.isInputOf(ubiqs.last) should not be (true)
   }
 
-  text should "contain 2 ubiquitinations that are APPROXIMATELY equal" in {
+  text should "contain 2 ubiquitinations that are APPROXIMATELY equal" taggedAs(AssemblyTests) in {
     ubiq1Input.isFuzzyInputOf(ubiqs.last) should be (true)
   }
 
-  regtext should "take Ubiquitinated Ras (UNMUTATED) as input" in {
+  regtext should "take Ubiquitinated Ras (UNMUTATED) as input" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -37,7 +38,8 @@ class TestAssembly extends FlatSpec with Matchers {
 
     regInput.mods contains "Mutant" should not be (true)
 
-    val nonMutantUbiq = mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
+    val nonMutantUbiq:Seq[IO] =
+      mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
 
     nonMutantUbiq should have size (1)
 
@@ -46,7 +48,7 @@ class TestAssembly extends FlatSpec with Matchers {
   }
 
 
-  regtext should "produce Ubiquitinated Ras (UNMUTATED) + Regulation as output" in {
+  regtext should "produce Ubiquitinated Ras (UNMUTATED) + Regulation as output" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -57,7 +59,8 @@ class TestAssembly extends FlatSpec with Matchers {
 
     regOutput.mods contains "Mutant" should not be (true)
 
-    val nonMutantUbiq = mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
+    val nonMutantUbiq:Seq[IO] =
+      mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
 
     nonMutantUbiq should have size (1)
 
@@ -70,7 +73,7 @@ class TestAssembly extends FlatSpec with Matchers {
   // make sure input checks are working
   val inputAssertion = "For a BioMention, m, WHERE val output = IOResolver(m).getInput.get"
 
-  inputAssertion should "input == input.isInputOf(m)" in {
+  inputAssertion should "input == input.isInputOf(m)" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -89,7 +92,7 @@ class TestAssembly extends FlatSpec with Matchers {
   // make sure output checks are working
   val outputAssertion = "For a BioMention, m, WHERE val output = IOResolver(m).getOutput.get"
 
-  outputAssertion should "output == output.isOutputOf(m)" in {
+  outputAssertion should "output == output.isOutputOf(m)" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -97,7 +100,7 @@ class TestAssembly extends FlatSpec with Matchers {
     IOResolver.getOutput(reg).get.isOutputOf(reg) should be (true)
   }
 
-  outputAssertion should "output == output.isFuzzyOutputOf(m)" in {
+  outputAssertion should "output == output.isFuzzyOutputOf(m)" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
