@@ -1,10 +1,15 @@
 package edu.arizona.sista.assembly
 
 import edu.arizona.sista.odin._
+import edu.arizona.sista.reach.mentions.BioRelationMention
 
 
 trait AssemblySieve {
 
+  // the label to be used by RelationMentions constructed during assembly
+  val label = Seq("Assembly")
+  val incomingLabel = "incoming"
+  val outgoingLabel = "outgoing"
   // the name of the sieve
   def name = this.getClass.getName
 
@@ -19,9 +24,44 @@ trait AssemblySieve {
 class ExactIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
-    // For each mention, generate (Mention, Input, Output) triples
-    // TODO
-    AssemblyGraph(Nil, "") // return placeholder
+    //
+    val links:Seq[BioRelationMention] =
+    for {m1 <- mentions
+        // get IO representations for m1
+        m1Input = IOResolver.getInput(m1).get
+        m1Output = IOResolver.getOutput(m1).get
+        // compare m1's IO to the IO of every other mention
+        m2 <- mentions
+        // get IO representations for m2
+        m2Input = IOResolver.getInput(m2).get
+        m2Output = IOResolver.getOutput(m2).get
+        // don't link if these mentions are the same
+        if m1 != m2
+        // only yield if the strict IO constraint holds
+        if m1Output == m2Input || m1Input == m2Output} yield {
+        val result = (m1, m2) match {
+          // mention 2's input is coming from the output of mention 1
+          case (incoming, outgoing) if m1Output == m2Input =>
+            // the assembly link
+            new BioRelationMention(labels = this.label,
+              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              sentence = incoming.sentence,
+              document = incoming.document,
+              keep = true,
+              foundBy = this.name)
+          // mention 1's input is coming from the output of mention 2
+          case (outgoing, incoming) if m1Input == m2Output =>
+            // the assembly link
+            new BioRelationMention(labels = this.label,
+              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              sentence = incoming.sentence,
+              document = incoming.document,
+              keep = true,
+              foundBy = this.name)
+        }
+        result
+      }
+    AssemblyGraph(links, this.name)
   }
 }
 
@@ -51,4 +91,21 @@ class PrepositionLinkSieve extends AssemblySieve {
     // TODO
     AssemblyGraph(Nil, "") // return placeholder
   }
+}
+
+
+object SieveManager {
+//  // The default sieve
+//  class IdentitySieve extends AssemblySieve {
+//    // do nothing
+//    def assemble(mentions:Seq[Mention]) = AssemblyGraph(Nil, "")
+//  }
+  // alternative to reflection for lookup
+  val lut =
+    Map[String, AssemblySieve](
+      "ExactIOSieve" -> new ExactIOSieve,
+      "ApproximateIOSieve" -> new ApproximateIOSieve,
+      "PrepositionLinkSieve" -> new PrepositionLinkSieve)
+      // if the key is missing from the map, return an IdentitySieve
+      //.withDefaultValue(new IdentitySieve)
 }
