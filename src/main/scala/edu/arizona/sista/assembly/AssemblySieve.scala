@@ -110,7 +110,6 @@ class ApproximateIOSieve extends AssemblySieve {
       }
     AssemblyGraph(links, this.name)
   }
-  }
 }
 
 /**
