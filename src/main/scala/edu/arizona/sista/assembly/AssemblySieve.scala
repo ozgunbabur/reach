@@ -24,24 +24,23 @@ trait AssemblySieve {
 class ExactIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
-    //
+    // find pairs that satisfy strict IO conditions
+    // input of m1 must be output of m2 OR input of m2 must be output m1
     val links:Seq[BioRelationMention] =
     for {m1 <- mentions
-        // get IO representations for m1
-        m1Input = IOResolver.getInput(m1).get
+        // get output representation for m1
         m1Output = IOResolver.getOutput(m1).get
         // compare m1's IO to the IO of every other mention
         m2 <- mentions
-        // get IO representations for m2
-        m2Input = IOResolver.getInput(m2).get
+        // get output representation for m2
         m2Output = IOResolver.getOutput(m2).get
         // don't link if these mentions are the same
         if m1 != m2
         // only yield if the strict IO constraint holds
-        if m1Output == m2Input || m1Input == m2Output} yield {
+        if m1Output.isInputOf(m2) || m2Output.isInputOf(m1)} yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
-          case (incoming, outgoing) if m1Output == m2Input =>
+          case (incoming, outgoing) if m1Output.isInputOf(m2) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
               arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
@@ -50,7 +49,7 @@ class ExactIOSieve extends AssemblySieve {
               keep = true,
               foundBy = this.name)
           // mention 1's input is coming from the output of mention 2
-          case (outgoing, incoming) if m1Input == m2Output =>
+          case (outgoing, incoming) if m2Output.isInputOf(m1) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
               arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
@@ -72,9 +71,45 @@ class ExactIOSieve extends AssemblySieve {
 class ApproximateIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
-    // For each mention, generate (Mention, Input, Output) triples
-    // TODO
-    AssemblyGraph(Nil, "") // return placeholder
+    // find pairs that satisfy approximate IO conditions
+    // input of m1 must be approximate output of m2 OR input of m2 must be approximate output m1
+    // see IO.fuzzyMatch for details on meaning of "approximate"
+    val links:Seq[BioRelationMention] =
+      for {m1 <- mentions
+           // get output representation for m1
+           m1Output = IOResolver.getOutput(m1).get
+           // compare m1's IO to the IO of every other mention
+           m2 <- mentions
+           // get output representation for m2
+           m2Output = IOResolver.getOutput(m2).get
+           // don't link if these mentions are the same
+           if m1 != m2
+           // only yield if the approximate IO constraint holds
+           if m1Output.isFuzzyInputOf(m2) || m2Output.isFuzzyInputOf(m1)} yield {
+        val result = (m1, m2) match {
+          // mention 2's input is coming from the output of mention 1
+          case (incoming, outgoing) if m1Output.isFuzzyInputOf(m2) =>
+            // the assembly link
+            new BioRelationMention(labels = this.label,
+              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              sentence = incoming.sentence,
+              document = incoming.document,
+              keep = true,
+              foundBy = this.name)
+          // mention 1's input is coming from the output of mention 2
+          case (outgoing, incoming) if m2Output.isFuzzyInputOf(m1) =>
+            // the assembly link
+            new BioRelationMention(labels = this.label,
+              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              sentence = incoming.sentence,
+              document = incoming.document,
+              keep = true,
+              foundBy = this.name)
+        }
+        result
+      }
+    AssemblyGraph(links, this.name)
+  }
   }
 }
 
