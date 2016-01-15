@@ -42,9 +42,11 @@ class TestAssembly extends FlatSpec with Matchers {
     nonMutantUbiq should have size (1)
 
     regInput == nonMutantUbiq.head should be (true)
+    regInput.fuzzyMatch(nonMutantUbiq.head) should be (true)
   }
 
-  regtext should "produce Ubiquitinated Ras (UNMUTATED) as output" in {
+
+  regtext should "produce Ubiquitinated Ras (UNMUTATED) + Regulation as output" in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -59,6 +61,47 @@ class TestAssembly extends FlatSpec with Matchers {
 
     nonMutantUbiq should have size (1)
 
-    regOutput == nonMutantUbiq.head should be (true)
+    // Should fail because of + Regulation on reg output
+    regOutput == nonMutantUbiq.head should be (false)
+    // Fuzzy match because of Regulation on regOutput
+    regOutput.fuzzyMatch(nonMutantUbiq.head) should be (true)
+  }
+
+  // make sure input checks are working
+  val inputAssertion = "For a BioMention, m, WHERE val output = IOResolver(m).getInput.get"
+
+  inputAssertion should "input == input.isInputOf(m)" in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
+    IOResolver.getInput(reg).get.isInputOf(reg) should be (true)
+  }
+
+  inputAssertion should "input == input.isFuzzyInputOf(m)" in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
+    IOResolver.getInput(reg).get.isFuzzyInputOf(reg) should be (true)
+  }
+
+  // make sure output checks are working
+  val outputAssertion = "For a BioMention, m, WHERE val output = IOResolver(m).getOutput.get"
+
+  outputAssertion should "output == output.isOutputOf(m)" in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
+    IOResolver.getOutput(reg).get.isOutputOf(reg) should be (true)
+  }
+
+  outputAssertion should "output == output.isFuzzyOutputOf(m)" in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
+    IOResolver.getOutput(reg).get.isFuzzyOutputOf(reg) should be (true)
   }
 }
