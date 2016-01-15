@@ -8,8 +8,6 @@ trait AssemblySieve {
 
   // the label to be used by RelationMentions constructed during assembly
   val label = Seq("Assembly")
-  val incomingLabel = "incoming"
-  val outgoingLabel = "outgoing"
   // the name of the sieve
   def name = this.getClass.getName
 
@@ -43,7 +41,7 @@ class ExactIOSieve extends AssemblySieve {
           case (incoming, outgoing) if m1Output.isInputOf(m2) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
-              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
               keep = true,
@@ -52,7 +50,7 @@ class ExactIOSieve extends AssemblySieve {
           case (outgoing, incoming) if m2Output.isInputOf(m1) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
-              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
               keep = true,
@@ -91,7 +89,7 @@ class ApproximateIOSieve extends AssemblySieve {
           case (incoming, outgoing) if m1Output.isFuzzyInputOf(m2) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
-              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
               keep = true,
@@ -100,7 +98,7 @@ class ApproximateIOSieve extends AssemblySieve {
           case (outgoing, incoming) if m2Output.isFuzzyInputOf(m1) =>
             // the assembly link
             new BioRelationMention(labels = this.label,
-              arguments = Map(this.incomingLabel -> Seq(incoming), this.outgoingLabel -> Seq(outgoing)),
+              arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
               sentence = incoming.sentence,
               document = incoming.document,
               keep = true,
@@ -127,6 +125,8 @@ class PrepositionLinkSieve extends AssemblySieve {
   }
 }
 
+
+// TODO: Add sieve to convert regs into Assembly mentions (A causes B, C leads to D, etc)
 
 object SieveManager {
 //  // The default sieve

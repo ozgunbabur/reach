@@ -9,10 +9,10 @@ case class Link(m: RelationMention) {
   // TODO: confirm that mention equality does not involve foundBy attribute
   def reverse:Link = {
     // switch the arguments
-    val followers = m.arguments("input")
-    val predecessors = m.arguments("output")
+    val followers = m.arguments(Architecture.predecessor)
+    val predecessors = m.arguments(Architecture.successor)
     // update the old mention's map
-    val reversedArgs = m.arguments + ("input" -> predecessors, "output" -> followers)
+    val reversedArgs = m.arguments + (Architecture.predecessor -> predecessors, Architecture.successor -> followers)
     Link(m.copy(arguments = reversedArgs))
   }
 }
@@ -31,15 +31,15 @@ case class AssemblyGraph(connected:Seq[RelationMention], producedBy:String) {
     val links:Seq[(Mention, (String, Seq[Mention]))] =
       (for (m <- connected) yield {
         // RelationMentions used in the AssemblyGraph should contain the keywords "input" and "output"
-        val predecessors:Seq[Mention] = m.arguments("input")
-        val successors:Seq[Mention] = m.arguments("output")
-        predecessors.map(p => (p, ("input", successors))) ++ successors.map(s => (s, ("output", predecessors)))
+        val predecessors:Seq[Mention] = m.arguments(Architecture.predecessor)
+        val successors:Seq[Mention] = m.arguments(Architecture.successor)
+        predecessors.map(p => (p, (Architecture.predecessor, successors))) ++ successors.map(s => (s, (Architecture.successor, predecessors)))
       }).flatten
     // Get a mapping of mention to its incoming mentions & outgoing mentions
     val mentionMap: Map[Mention, Map[String, Seq[Mention]]] = links.groupBy(_._1).mapValues(v => v.map(_._2).toMap)
     val nodes = for {(k,v) <- mentionMap
-                     incoming = v.getOrElse ("input", Nil)
-                     outgoing = v.getOrElse ("output", Nil)
+                     incoming = v.getOrElse (Architecture.predecessor, Nil)
+                     outgoing = v.getOrElse (Architecture.successor, Nil)
     } yield Node(k, incoming, outgoing)
     nodes.toSeq
   }
@@ -55,5 +55,16 @@ case class AssemblyGraph(connected:Seq[RelationMention], producedBy:String) {
     // return union of graph1 and constrained graph2
     AssemblyGraph((graph1.map(link => link.m) ++ graph2Prime.map(_.m)).distinct, g2.producedBy)
   }
+  // TODO: Consider this case:
+  // a -> b
+  // c -> a
+  // should we infer C -> B?
+  // or, even given the explicit pairs, does B -> C remain possible in biology?
 
+}
+
+// Defines architecture attributes
+object Architecture {
+  val predecessor = "before"
+  val successor = "after"
 }
