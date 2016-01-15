@@ -11,7 +11,7 @@ import scala.util.{Try, Success, Failure}
 
 class SieveBasedAssembler {
 
-  // Take a seq of AssemblySieve and return a Seq[AssemblyGraph
+  // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
   def assemble(mentions:Seq[Mention], sieves:Seq[AssemblySieve]):Seq[AssemblyGraph] = sieves.map(_.assemble(mentions))
 
 }

@@ -113,8 +113,8 @@ class ApproximateIOSieve extends AssemblySieve {
 }
 
 /**
- * Linguistic sieve.
- * Run Odin syntactic dep rules to see if mentions are linked by a prep (intra-sentence)
+ * Linguistic sieve (intra-sentence).
+ * Run Odin syntactic dep rules to see if mentions are linked by a prep
  */
 class PrepositionLinkSieve extends AssemblySieve {
 
