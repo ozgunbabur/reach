@@ -17,39 +17,42 @@ abstract class IO {
     case _ => false
   }
 
-  // Check to see if this Input is the Input of some Mention
+  // Fuzzy match over IO, checking Grounding-based id OR text
+  def fuzzyMatch(that:IO): Boolean = this.id.equalsIgnoreCase(that.id) || this.text.equalsIgnoreCase(that.text)
+
+  // Check to see if this IO is the Input of some Mention
   // Uses custom equality def (text doesn't need to match)
   def isInputOf(m: Mention): Boolean = this.equals(IOResolver.getInput(m).get)
-  // Check to see if this Input is the Output of some Mention
+  // Check to see if this IO is the Output of some Mention
   // Uses custom equality def (text doesn't need to match)
   def isOutputOf(m: Mention): Boolean = this.equals(IOResolver.getOutput(m).get)
 
+  // Check to see if this IO is the Output of some Mention
+  // ignores differences in the mods
   def isFuzzyOutputOf(m: Mention): Boolean = {
     val out = IOResolver.getOutput(m).get
     out match {
-      case something:Output =>
-        // approximate match on id OR text
-        this.id.equalsIgnoreCase(something.id) || this.text.equalsIgnoreCase(something.text)
+      case something:Output => this.fuzzyMatch(out)
       case _ => false
     }
   }
 
+  // Check to see if this IO is the Output of some Mention
+  // ignores differences in the mods
   def isFuzzyInputOf(m: Mention): Boolean = {
     val input = IOResolver.getInput(m).get
     input match {
-      case something:Input =>
-        // approximate match on id OR text
-        this.id.equalsIgnoreCase(something.id) || this.text.equalsIgnoreCase(something.text)
+      case something:Input => this.fuzzyMatch(input)
       case _ => false
     }
   }
 }
 
-case class Input(id: String, mods: Set[String], text: String) extends IO {
+case class Input(id: String, mods: Set[String], text: String, into: String) extends IO {
 
 }
 
-case class Output(id: String, mods: Set[String], text: String) extends IO {
+case class Output(id: String, mods: Set[String], text: String, from: String) extends IO {
 
 }
 
@@ -86,7 +89,7 @@ object IOResolver {
       val id = btm.xref.get.printString
       val text = btm.text
       val mods = getRelevantModifications(btm)
-      Some(Input(id, mods, text))
+      Some(Input(id, mods, text, into = btm.label))
 
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
@@ -95,11 +98,11 @@ object IOResolver {
       val id = getGroundingIDasString(m)
       val text = m.text
       val mods =
-      // Get event label (PTM)
+      // Get theme's label (PTM)
         Set(bemWithTheme.label) ++
           // Get relevant modifications
           getRelevantModifications(m)
-      Some(Input(id, mods, text))
+      Some(Input(id, mods, text, into = bemWithTheme.label))
 
     // Do we have a regulation?
     case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
@@ -113,7 +116,7 @@ object IOResolver {
           getRelevantModifications(m) ++
           // the mods of the theme of the theme
           getRelevantModifications(m.arguments("theme").head)
-      Some(Input(id, mods, text))
+      Some(Input(id, mods, text, into = reg.label))
 
     // TODO: What is being left out?
     case _ => None
@@ -129,7 +132,7 @@ object IOResolver {
     case btm: BioTextBoundMention => {
       getInput(mention) match {
         case input if input.nonEmpty =>
-          Some(Output(input.get.id, input.get.mods, input.get.text))
+          Some(Output(input.get.id, input.get.mods, input.get.text, from = btm.label))
         case _ => None
       }
     }
@@ -145,7 +148,7 @@ object IOResolver {
         Set(bemWithTheme.label) ++
           // Get relevant modifications
           getRelevantModifications(m)
-      Some(Output(id, mods, text))
+      Some(Output(id, mods, text, from = bemWithTheme.label))
 
     // Do we have a regulation?
     case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
@@ -153,13 +156,15 @@ object IOResolver {
       val id = getGroundingIDasString(m)
       val text = m.text
       val mods =
-      // the label of the controlled (PTM?)
+        // get top-level event's label (what kind of regulation?)
+        Set(reg.label) ++
+        // the label of the controlled (PTM?)
         Set(m.label) ++
           // the mods of the theme
           getRelevantModifications(m) ++
           // the mods of the theme of the theme
           getRelevantModifications(m.arguments("theme").head)
-      Some(Output(id, mods, text))
+      Some(Output(id, mods, text, from = reg.label))
 
     // TODO: What is being left out?
     case _ => None
