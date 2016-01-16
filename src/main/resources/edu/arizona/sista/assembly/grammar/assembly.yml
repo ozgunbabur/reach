@@ -52,7 +52,7 @@ rules:
     priority: ${surfacerulepriority}
     pattern: |
       # "A precedes B" pattern
-      @before:${incomingtype} [lemma=/^immediate|direct$/] [lemma=${beforelemmas}] [tag=DT]? @after:${outgoingtype}
+      @before:${incomingtype} [lemma=/^immediate|direct$/] [lemma=${beforelemmasyns}] [tag=DT]? @after:${outgoingtype}
       |
       # "A follows B" pattern
       @before:${incomingtype} [lemma=/^immediate|direct$/] [lemma=${afterlemmasyns}] [tag=DT]? @after:${outgoingtype}
