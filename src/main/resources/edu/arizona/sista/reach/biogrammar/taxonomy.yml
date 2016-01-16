@@ -47,3 +47,10 @@
                 - Gene_or_gene_product
                 - Complex
                 - GENE
+# a preliminary taxonomy for assembly
+- Assembly:
+  # for pairs that are directly (immediately) connected
+  # difficult to know from odin rules alone, but not impossible
+  - DirectConnection
+  # for pairs that are indirectly (not immediately) connected
+  - IndirectConnection
