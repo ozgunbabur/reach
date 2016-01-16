@@ -15,6 +15,29 @@ trait AssemblySieve {
 
   // takes mentions and produces an AssemblyGraph
   def assemble(mentions:Seq[Mention]): AssemblyGraph
+
+  // constraints on assembled mentions to avoid redundancies
+  // only return assembled mentions
+  // where both "before" and "after" args are
+  // PossibleControllers (see reach/biogrammar/taxonomy.yml)
+  // (i.e. ignore mentions related to context, cell types, species, etc)
+  // an assembled mention should not join the same Entity
+  // (i.e. "before" & "after" should not both point to Entity e)
+  def filterAssembled(am: Seq[RelationMention]):Seq[RelationMention]= {
+    am.filter{ a =>
+      val before = a.arguments("before").head
+      val after = a.arguments("after").head
+      // only assemble things that involve PossibleControllers
+      (before matches "PossibleController") && (after matches "PossibleController")
+    }.filterNot{ a =>
+      val before = a.arguments("before").head
+      val after = a.arguments("after").head
+      // remove assembled mentions where the before and after is the same Entity
+      (IOResolver.getOutput(before) == IOResolver.getOutput(after)) &&
+        (a.arguments("before").head matches "Entity") &&
+        (a.arguments("after").head matches "Entity")
+    }
+  }
 }
 
 /**
@@ -60,7 +83,9 @@ class ExactIOSieve extends AssemblySieve {
         }
         result
       }
-    AssemblyGraph(links, this.name)
+    // validate assembled mentions
+    val filteredLinks = filterAssembled(links)
+    AssemblyGraph(filteredLinks, this.name)
   }
 }
 
@@ -108,7 +133,9 @@ class ApproximateIOSieve extends AssemblySieve {
         }
         result
       }
-    AssemblyGraph(links, this.name)
+    // validate assembled mentions
+    val filteredLinks = filterAssembled(links)
+    AssemblyGraph(filteredLinks, this.name)
   }
 }
 
@@ -124,19 +151,20 @@ class PrepositionLinkSieve extends AssemblySieve {
     val rulesPath = "/edu/arizona/sista/assembly/grammar/assembly.yml"
     val rules:String = RuleReader.readResource(rulesPath)
     val ee = ExtractorEngine(rules)
-    // the mentions found by REACH
-    val oldState = State(mentions)
+    // a subset of the mentions found by REACH, filtered for assembly
+    val validMentions = mentions.filter(_ matches "PossibleController")
+    val oldState = State(validMentions)
     // since we break a paper into sections, we'll need to group the mentions by doc
     // rule set only produces target RelationMentions
     val assembledMentions =
-      mentions
+      validMentions
         .groupBy(_.document)
         .flatMap(pair => ee.extractFrom(pair._1, oldState))
         // only return assembly mentions
         .filter(_ matches this.label)
         .map(_.asInstanceOf[RelationMention])
         .toVector
-    // return placeholder
+
     AssemblyGraph(assembledMentions, this.name)
   }
 }
