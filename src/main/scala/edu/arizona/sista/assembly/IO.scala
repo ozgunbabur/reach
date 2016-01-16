@@ -112,7 +112,7 @@ object IOResolver {
       Some(Input(id, mods, text, into = bemWithTheme.label))
 
     // Do we have a regulation?
-    // TODO: should the input be based on the controller?
+    // TODO: change so that input is controller
     // consider this sentence: EGF-induced Gab1 tyrosine phosphorylation
     case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       val m = reg.arguments("controlled").head
