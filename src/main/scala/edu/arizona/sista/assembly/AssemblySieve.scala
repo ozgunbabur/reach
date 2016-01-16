@@ -158,18 +158,22 @@ class PrepositionLinkSieve extends AssemblySieve {
     val ee = ExtractorEngine(rules)
     // a subset of the mentions found by REACH, filtered for assembly
     val validMentions = mentions.filter(_ matches "PossibleController")
-    val oldState = State(validMentions)
     // since we break a paper into sections, we'll need to group the mentions by doc
     // rule set only produces target RelationMentions
-    val assembledMentions =
-      validMentions
-        .groupBy(_.document)
-        .flatMap(pair => ee.extractFrom(pair._1, oldState))
-        // only return assembly mentions
-        .filter(_ matches this.label)
-        .map(_.asInstanceOf[RelationMention])
-        .toVector
 
+    val assembledMentions =
+      (for {(doc, mentionsFromReach) <- validMentions.groupBy(_.document)
+           // create a new state with just the mentions from a particular doc
+           // note that a doc is as granular as a section of a paper
+           oldState = State(mentionsFromReach)
+           // extract the assembly mentions from the subset of reach mentions
+           // belonging to the same doc.
+           // NOTE: Odin expects all mentions in the state to belong to the same doc!
+           m <- ee.extractFrom(doc, oldState)
+           // TODO: this may not be necessary
+           // ensure that mention is one related to Assembly
+           if m matches this.label} yield m.asInstanceOf[RelationMention])
+        .toVector
     // validate assembled mentions
     //val filteredAssembledMentions = filterAssembled(assembledMentions)
     AssemblyGraph(assembledMentions, this.name)
