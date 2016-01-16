@@ -165,7 +165,9 @@ class PrepositionLinkSieve extends AssemblySieve {
         .map(_.asInstanceOf[RelationMention])
         .toVector
 
-    AssemblyGraph(assembledMentions, this.name)
+    // validate assembled mentions
+    val filteredAssembledMentions = filterAssembled(assembledMentions)
+    AssemblyGraph(filteredAssembledMentions, this.name)
   }
 }
 
