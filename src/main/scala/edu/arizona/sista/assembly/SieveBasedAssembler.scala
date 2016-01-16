@@ -26,15 +26,20 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
     val after = m.arguments("after").head
     val input = if (IOResolver.hasOutput(before)) IOResolver.getOutput(before).get else None
     val output = if (IOResolver.hasOutput(after)) IOResolver.getOutput(after).get else None
-    val text = s"${before.text} ... ${after.text}"
+    val text =
+      if ((before.document != after.document) && (before.sentence != after.sentence))
+        s"${before.text} ... ${after.text}"
+      else m.text
     val representation =
-      s"""mention:            ${m.label}
-          |foundBy:           ${m.foundBy}
-          |text:              $text
-          |output of before:  $input
-          |before label:      ${before.label}
-          |output of after:   $output
-          |after label:       ${after.label}
+       s"""mention:             ${m.label}
+          |foundBy:             ${m.foundBy}
+          |text:                $text
+          |output of "before":  $input
+          |"before" label:      ${before.label}
+          |"before" text:       ${before.text}
+          |output of "after":   $output
+          |"after" label:       ${after.label}
+          |"after" text:        ${after.text}
           |""".stripMargin
     println(representation)
   }
