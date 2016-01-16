@@ -58,6 +58,13 @@ case class Output(id: String, mods: Set[String], text: String, from: String) ext
 
 object IOResolver {
 
+
+  def findPatient(m: Mention):Option[Mention] = m match {
+    case hasTheme if hasTheme.arguments contains "theme" => Some(hasTheme.arguments("theme").head)
+    // Doesn't have a theme or controlled, so give up
+    case failure if !(failure.arguments contains "controlled") => None
+    case hasControlled if hasControlled.arguments contains "controlled" => findPatient(hasControlled.arguments("controlled").head)
+  }
   def getGroundingIDasString(m: Mention): String = {
 
     val bm = m.toBioMention
@@ -99,24 +106,27 @@ object IOResolver {
       val text = m.text
       val mods =
       // Get theme's label (PTM)
-        Set(bemWithTheme.label) ++
+        Set(m.label) ++
           // Get relevant modifications
           getRelevantModifications(m)
       Some(Input(id, mods, text, into = bemWithTheme.label))
 
     // Do we have a regulation?
+    // TODO: should the input be based on the controller?
+    // consider this sentence: EGF-induced Gab1 tyrosine phosphorylation
     case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
       val text = m.text
+      val patient = findPatient(m)
       val mods =
       // the label of the controlled (PTM?)
         Set(m.label) ++
-          // the mods of the theme
-          getRelevantModifications(m) ++
-          // the mods of the theme of the theme
-          getRelevantModifications(m.arguments("theme").head)
-      Some(Input(id, mods, text, into = reg.label))
+          // the mods of the mention
+          getRelevantModifications(m)
+      // the mods of the theme of the theme
+      val allMods = if (patient.nonEmpty) getRelevantModifications(patient.get) ++ mods else mods
+      Some(Input(id, allMods, text, into = reg.label))
 
     // TODO: What is being left out?
     case _ => None
@@ -144,7 +154,7 @@ object IOResolver {
       val id = getGroundingIDasString(m)
       val text = m.text
       val mods =
-      // Get event label (PTM)
+        // Get event label (PTM)
         Set(bemWithTheme.label) ++
           // Get relevant modifications
           getRelevantModifications(m)
@@ -155,16 +165,17 @@ object IOResolver {
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
       val text = m.text
+      val patient = findPatient(m)
       val mods =
         // get top-level event's label (what kind of regulation?)
         Set(reg.label) ++
         // the label of the controlled (PTM?)
         Set(m.label) ++
           // the mods of the theme
-          getRelevantModifications(m) ++
-          // the mods of the theme of the theme
-          getRelevantModifications(m.arguments("theme").head)
-      Some(Output(id, mods, text, from = reg.label))
+          getRelevantModifications(m)
+      // the mods of the theme of the theme
+      val allMods = if (patient.nonEmpty) getRelevantModifications(patient.get) ++ mods else mods
+      Some(Output(id, allMods, text, from = reg.label))
 
     // TODO: What is being left out?
     case _ => None
