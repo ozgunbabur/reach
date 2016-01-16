@@ -9,10 +9,17 @@ import edu.arizona.sista.reach.nxml.NxmlReader
 import edu.arizona.sista.reach.mentions._
 import scala.util.{Try, Success, Failure}
 
-class SieveBasedAssembler {
+class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
 
   // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
-  def assemble(mentions:Seq[Mention], sieves:Seq[AssemblySieve]):Seq[AssemblyGraph] = sieves.map(_.assemble(mentions))
+  def assembleAndFilter(mentions:Seq[Mention], s:Seq[AssemblySieve]):Seq[AssemblyGraph] = s.map(_.assembleAndFilter(mentions))
+  // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
+  def assembleAndFilter(mentions:Seq[Mention]):Seq[AssemblyGraph] = sieves.map(_.assembleAndFilter(mentions))
+
+  // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
+  def assemble(mentions:Seq[Mention], s:Seq[AssemblySieve]):Seq[AssemblyGraph] = s.map(_.assemble(mentions))
+  // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
+  def assemble(mentions:Seq[Mention]):Seq[AssemblyGraph] = sieves.map(_.assemble(mentions))
 
   def displayAssembledMention(m: Mention):Unit = {
     val before = m.arguments("before").head
@@ -21,7 +28,8 @@ class SieveBasedAssembler {
     val output = if (IOResolver.hasOutput(after)) IOResolver.getOutput(after).get else None
     val text = s"${before.text} ... ${after.text}"
     val representation =
-      s"""mention:           ${m.label}
+      s"""mention:            ${m.label}
+          |foundBy:           ${m.foundBy}
           |text:              $text
           |output of before:  $input
           |before label:      ${before.label}
@@ -34,7 +42,8 @@ class SieveBasedAssembler {
 
 object SieveBasedAssemblySystem extends App {
 
-  val assembler = new SieveBasedAssembler()
+  val sieves = Seq(new ExactIOSieve, new ApproximateIOSieve, new PrepositionLinkSieve)
+  val assembler = new SieveBasedAssembler(sieves)
 
   val reader = new NxmlReader
   // Initialize the REACH system

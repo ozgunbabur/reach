@@ -37,6 +37,11 @@ trait AssemblySieve {
         (a.arguments("before").head matches "Entity") &&
         (a.arguments("after").head matches "Entity")
     }
+    //TODO: enforce constraint that ensures output of "before" != output of "after"
+  }
+
+  def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
+    AssemblyGraph(filterAssembled(assemble(mentions).connected), this.name)
   }
 }
 
@@ -84,8 +89,8 @@ class ExactIOSieve extends AssemblySieve {
         result
       }
     // validate assembled mentions
-    val filteredLinks = filterAssembled(links)
-    AssemblyGraph(filteredLinks, this.name)
+    //val filteredLinks = filterAssembled(links)
+    AssemblyGraph(links, this.name)
   }
 }
 
@@ -134,8 +139,8 @@ class ApproximateIOSieve extends AssemblySieve {
         result
       }
     // validate assembled mentions
-    val filteredLinks = filterAssembled(links)
-    AssemblyGraph(filteredLinks, this.name)
+    //val filteredLinks = filterAssembled(links)
+    AssemblyGraph(links, this.name)
   }
 }
 
@@ -166,8 +171,8 @@ class PrepositionLinkSieve extends AssemblySieve {
         .toVector
 
     // validate assembled mentions
-    val filteredAssembledMentions = filterAssembled(assembledMentions)
-    AssemblyGraph(filteredAssembledMentions, this.name)
+    //val filteredAssembledMentions = filterAssembled(assembledMentions)
+    AssemblyGraph(assembledMentions, this.name)
   }
 }
 
