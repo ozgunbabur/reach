@@ -8,12 +8,13 @@ vars:
   mylabel: "Assembly"
   deprulepriority: "1"
   surfacerulepriority: "2"
-  incomingbeforetimeprep: "/^<prep_(before|prior_to)$/"
-  incomingaftertimeprep: "/^<prep_(after|following)$/"
+  # < operator should be outside of regex
+  incomingbeforetimeprep: "</^prep_(before|prior_to)$/"
+  incomingaftertimeprep: "</^prep_(after|following)$/"
   incomingtype: "PossibleController"
   outgoingtype: "PossibleController"
-  beforelemmasyns: "/^before|prior|precede$/"
-  afterlemmasyns: "/^follow|after$/"
+  beforelemmasyns: "/^(before|prior|precede)$/"
+  afterlemmasyns: "/^(follow|after)$/"
 
 # rules for assembly sieve
 rules:
