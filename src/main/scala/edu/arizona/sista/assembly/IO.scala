@@ -33,6 +33,14 @@ case class IO(id: String, mods: Set[String], text: String) {
   def isFuzzyInputOf(m: Mention): Boolean = IOResolver.getInputs(m).exists(i => this.fuzzyMatch(i))
 }
 
+// Because an Event's input can involve more than Entity,
+// we represent the input to an event as a set of inputs
+// This class provides methods to simplify comparisons between these sets
+//
+// NOTE: though I am unaware of any cases of an event producing multiple outputs,
+// a decision was made to represent outputs as as as set of outputs as well.
+// I have switched back to using a single type (IO) to represent both inputs and outputs.
+// So far this has not been a problem.
 class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializable {
 
   private val members = m.toSet
@@ -111,7 +119,7 @@ object IOResolver {
     }
 
   // Represent the input to a Mention
-  // TODO: handle remaining special cases (Hydrolysis, and Translocation)
+  // TODO: handle remaining special cases (Hydrolysis, Translocation)
   def getInputs(mention: Mention):IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
@@ -157,7 +165,7 @@ object IOResolver {
   }
 
   // Represent the output of a Mention
-  // TODO: handle remaining special cases (Hydrolysis, and Translocation)
+  // TODO: handle remaining special cases (Hydrolysis, Translocation)
   def getOutputs(mention: Mention): IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
@@ -185,7 +193,7 @@ object IOResolver {
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
       // get input of each theme
       val input = getInputs(bemWithTheme)
-      // add the event's label to the set of mods for each input
+      // add the event's label (PTM) to the set of mods for each input
       val output = input.map(i => IO(i.id, i.mods ++ Set(bemWithTheme.label), i.text))
       IOSet(output)
 
