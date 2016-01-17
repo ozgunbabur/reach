@@ -182,6 +182,7 @@ object IOResolver {
     case binding: BioMention if binding matches "Binding" =>
       val output:Seq[IO] =
         for {
+          // process each binding participant
           theme:Mention <- binding.arguments("theme")
           id = getGroundingIDasString(theme)
           text = theme.text
