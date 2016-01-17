@@ -225,8 +225,6 @@ object IOResolver {
         } yield {
           // assemble the mods per reg output
           val mods =
-          // get top-level event's label (what kind of regulation?)
-            Set(reg.label) ++
             // the label of the controlled (PTM?)
             Set(controlled.label) ++
             // the mods of the theme
