@@ -3,7 +3,7 @@ package edu.arizona.sista.reach.assembly
 import edu.arizona.sista.reach.AssemblyTests
 import edu.arizona.sista.reach.TestUtils._
 import org.scalatest.{Matchers, FlatSpec}
-import edu.arizona.sista.assembly.{IO, IOResolver}
+import edu.arizona.sista.assembly.{IOSet, IO, IOResolver}
 
 class TestAssembly extends FlatSpec with Matchers {
 
@@ -37,7 +37,7 @@ class TestAssembly extends FlatSpec with Matchers {
     val reg = regs.head
 
     IOResolver.hasInput(reg) should be (true)
-    val inputsForReg = IOResolver.getInputs(reg)
+    val inputsForReg:IOSet = IOResolver.getInputs(reg)
 
     // The input should not involve a Mutant
     inputsForReg.exists(i => i.mods contains "Mutant" ) should not be (true)
@@ -67,7 +67,7 @@ class TestAssembly extends FlatSpec with Matchers {
       mentions
         .filter(_ matches "Entity")
         .flatMap(IOResolver.getOutputs)
-        .filterNot(m => (m.mods contains "Mutant"))
+        .filterNot(_.mods contains "Mutant")
 
     nonMutants should have size (2)
 
@@ -96,7 +96,7 @@ class TestAssembly extends FlatSpec with Matchers {
   }
 
   // make sure output checks are working
-  "IOResolver(m).getOutputs.get.isOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getOutputs.isOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
@@ -105,7 +105,7 @@ class TestAssembly extends FlatSpec with Matchers {
     IOResolver.getOutputs(reg).exists(_.isFuzzyOutputOf(reg)) should be (true)
   }
 
-  "IOResolver(m).getOutputs.get.isFuzzyOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getOutputs.isFuzzyOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
