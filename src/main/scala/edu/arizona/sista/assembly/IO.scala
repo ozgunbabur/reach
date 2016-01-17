@@ -155,7 +155,7 @@ object IOResolver {
         } yield IO(id, mods, text)
       IOSet(input)
 
-    // Do we have a regulation?
+    // Do we have a proper (valid) regulation?
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       // attempt to find the Agent and its Inputs
       val inputsOfAgents:Seq[IO] = findAgents(reg).flatMap(getInputs)
@@ -198,23 +198,33 @@ object IOResolver {
       val output = input.map(i => IO(i.id, i.mods ++ Set(bemWithTheme.label), i.text))
       IOSet(output)
 
-    // Do we have a regulation?
-    // TODO: replace .head with for ... yield
-    case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
-      val m = reg.arguments("controlled").head
-      val id = getGroundingIDasString(m)
-      val text = m.text
-      val patients = findPatients(m)
-      val mods =
-        // get top-level event's label (what kind of regulation?)
-        Set(reg.label) ++
-        // the label of the controlled (PTM?)
-        Set(m.label) ++
-          // the mods of the theme
-          getRelevantModifications(m) ++
-          // the mods of the theme of the theme
-          patients.flatMap(getRelevantModifications).toSet
-      IOSet(IO(id, mods, text))
+    // Do we have a proper (valid) regulation?
+    case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
+      val output =
+        for {
+          // process each controlled
+          controlled <- reg.arguments("controlled")
+          id = getGroundingIDasString(controlled)
+          text = controlled.text
+          // attempt to convert each controlled into its base entity
+          patients = findPatients(controlled)
+          // get the mods of the base entity for each assumed patient
+          modsFromPatients = patients.flatMap(getRelevantModifications).toSet
+        } yield {
+          // assemble the mods per reg output
+          val mods =
+          // get top-level event's label (what kind of regulation?)
+            Set(reg.label) ++
+            // the label of the controlled (PTM?)
+            Set(controlled.label) ++
+            // the mods of the theme
+            getRelevantModifications(controlled) ++
+            // the mods of the theme of the theme
+            modsFromPatients
+        // a single output per controlled
+        IO(id, mods, text)
+      }
+      IOSet(output)
 
     // TODO: What is being left out?
     case _ => IOSet.empty
