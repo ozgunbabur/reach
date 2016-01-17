@@ -33,7 +33,7 @@ trait AssemblySieve {
       val before = a.arguments("before").head
       val after = a.arguments("after").head
       // remove assembled mentions where the before and after is the same Entity
-      (IOResolver.getOutput(before) == IOResolver.getOutput(after)) &&
+      (IOResolver.getOutputs(before) == IOResolver.getOutputs(after)) &&
         (a.arguments("before").head matches "Entity") &&
         (a.arguments("after").head matches "Entity")
     }
@@ -57,18 +57,18 @@ class ExactIOSieve extends AssemblySieve {
     val links:Seq[BioRelationMention] =
     for {m1 <- mentions
         // get output representation for m1
-        m1Output = IOResolver.getOutput(m1).get
+        m1Outputs = IOResolver.getOutputs(m1)
         // compare m1's IO to the IO of every other mention
         m2 <- mentions
         // get output representation for m2
-        m2Output = IOResolver.getOutput(m2).get
+        m2Outputs = IOResolver.getOutputs(m2)
         // don't link if these mentions are the same
         if m1 != m2
         // only yield if the strict IO constraint holds
-        if m1Output.isInputOf(m2) || m2Output.isInputOf(m1)} yield {
+        if m1Outputs.isInputOf(m2) || m2Outputs.isInputOf(m1)} yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
-          case (incoming, outgoing) if m1Output.isInputOf(m2) =>
+          case (incoming, outgoing) if m1Outputs.isInputOf(m2) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -77,7 +77,7 @@ class ExactIOSieve extends AssemblySieve {
               keep = true,
               foundBy = this.name)
           // mention 1's input is coming from the output of mention 2
-          case (outgoing, incoming) if m2Output.isInputOf(m1) =>
+          case (outgoing, incoming) if m2Outputs.isInputOf(m1) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -107,18 +107,18 @@ class ApproximateIOSieve extends AssemblySieve {
     val links:Seq[BioRelationMention] =
       for {m1 <- mentions
            // get output representation for m1
-           m1Output = IOResolver.getOutput(m1).get
+           m1Outputs = IOResolver.getOutputs(m1)
            // compare m1's IO to the IO of every other mention
            m2 <- mentions
            // get output representation for m2
-           m2Output = IOResolver.getOutput(m2).get
+           m2Outputs = IOResolver.getOutputs(m2)
            // don't link if these mentions are the same
            if m1 != m2
            // only yield if the approximate IO constraint holds
-           if m1Output.isFuzzyInputOf(m2) || m2Output.isFuzzyInputOf(m1)} yield {
+           if m1Outputs.isFuzzyInputOf(m2) || m2Outputs.isFuzzyInputOf(m1)} yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
-          case (incoming, outgoing) if m1Output.isFuzzyInputOf(m2) =>
+          case (incoming, outgoing) if m1Outputs.isFuzzyInputOf(m2) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -127,7 +127,7 @@ class ApproximateIOSieve extends AssemblySieve {
               keep = true,
               foundBy = this.name)
           // mention 1's input is coming from the output of mention 2
-          case (outgoing, incoming) if m2Output.isFuzzyInputOf(m1) =>
+          case (outgoing, incoming) if m2Outputs.isFuzzyInputOf(m1) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),

@@ -24,8 +24,8 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
   def displayAssembledMention(m: Mention):Unit = {
     val before = m.arguments("before").head
     val after = m.arguments("after").head
-    val input = if (IOResolver.hasOutput(before)) IOResolver.getOutput(before).get else None
-    val output = if (IOResolver.hasOutput(after)) IOResolver.getOutput(after).get else None
+    val input = IOResolver.getOutputs(before)
+    val output = IOResolver.getOutputs(after)
     val text =
       if ((before.document != after.document) && (before.sentence != after.sentence))
         s"${before.text} ... ${after.text}"
