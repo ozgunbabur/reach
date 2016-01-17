@@ -78,18 +78,18 @@ object IOSet {
 
 object IOResolver {
 
-  def findPatient(m: Mention):Option[Mention] = m match {
-    case hasTheme if hasTheme.arguments contains "theme" => Some(hasTheme.arguments("theme").head)
-    // Doesn't have a theme or controlled, so give up
-    case failure if !(failure.arguments contains "controlled") => None
-    case hasControlled if hasControlled.arguments contains "controlled" => findPatient(hasControlled.arguments("controlled").head)
+  def findPatients(m: Mention):Seq[Mention] = m match {
+    // avoid recursive calls, as too much information can be lost
+    case hasTheme if hasTheme.arguments contains "theme" => hasTheme.arguments("theme")
+    case naked if naked.arguments.isEmpty => Seq(naked)
+    case hasControlled if hasControlled.arguments contains "controlled" => hasControlled.arguments("controlled")
   }
 
-  def findAgent(m: Mention):Option[Mention] = m match {
-    case hasCause if hasCause.arguments contains "cause" => Some(hasCause.arguments("cause").head)
-    // Doesn't have a theme or controlled, so give up
-    case failure if !(failure.arguments contains "controlled") => None
-    case hasController if hasController.arguments contains "controller" => findPatient(hasController.arguments("controlled").head)
+  def findAgents(m: Mention):Seq[Mention] = m match {
+    // avoid recursive calls, as too much information can be lost
+    case hasCause if hasCause.arguments contains "cause" => hasCause.arguments("cause")
+    case hasController if hasController.arguments contains "controller" => hasController.arguments("controlled")
+    case naked if naked.arguments.isEmpty => Seq(naked)
   }
 
   def getGroundingIDasString(m: Mention): String = {
@@ -97,11 +97,12 @@ object IOResolver {
     m.toBioMention match {
       case tb : BioTextBoundMention => tb.xref.get.printString
       // recursively unpack this guy
-      case hasPatient if findPatient(m).nonEmpty => getGroundingIDasString(findPatient(m).get)
+      // TODO: figure out a better way to do this than .head
+      case hasPatient if findPatients(m).nonEmpty => getGroundingIDasString(findPatients(m).head)
     }
   }
 
-  // Get labels for PTM an Mutant mods
+  // Get labels for PTM and Mutant mods
   def getRelevantModifications(m: Mention): Set[String] =
     m.toBioMention.modifications.flatMap {
       case ptm: PTM => Set(ptm.label)
@@ -136,9 +137,10 @@ object IOResolver {
 
     // Do we have a regulation?
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
-      val inputsForAgent = getInputs(findAgent(reg).get)
-      val inputsForPatient = getInputs(findPatient(reg).get)
-      IOSet(inputsForAgent ++ inputsForPatient)
+      // attempt to find the Agent and its Inputs
+      val inputsOfAgents:Seq[IO] = findAgents(reg).flatMap(getInputs)
+      val inputsOfPatients:Seq[IO] = findPatients(reg).flatMap(getInputs)
+      IOSet(inputsOfAgents ++ inputsOfPatients)
 
     // TODO: What is being left out?
     case _ => IOSet.empty
@@ -173,17 +175,17 @@ object IOResolver {
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
       val text = m.text
-      val patient = findPatient(m)
+      val patients = findPatients(m)
       val mods =
         // get top-level event's label (what kind of regulation?)
         Set(reg.label) ++
         // the label of the controlled (PTM?)
         Set(m.label) ++
           // the mods of the theme
-          getRelevantModifications(m)
-      // the mods of the theme of the theme
-      val allMods = if (patient.nonEmpty) getRelevantModifications(patient.get) ++ mods else mods
-      IOSet(IO(id, allMods, text))
+          getRelevantModifications(m) ++
+          // the mods of the theme of the theme
+          patients.flatMap(getRelevantModifications).toSet
+      IOSet(IO(id, mods, text))
 
     // TODO: What is being left out?
     case _ => IOSet.empty
