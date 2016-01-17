@@ -111,7 +111,7 @@ object IOResolver {
     }
 
   // Represent the input to a Mention
-  // TODO: handle cases with multiple themes?
+  // TODO: handle remaining special cases (Hydrolysis, and Translocation)
   def getInputs(mention: Mention):IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
@@ -148,7 +148,7 @@ object IOResolver {
   }
 
   // Represent the output of a Mention
-  // TODO: handle cases with multiple themes?
+  // TODO: handle remaining special cases (Hydrolysis, and Translocation)
   def getOutputs(mention: Mention): IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
