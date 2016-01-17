@@ -123,7 +123,7 @@ object IOResolver {
   def getInputs(mention: Mention):IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
-    // Should this only apply if btm.matches("Entity")
+    // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
       val id = btm.xref.get.printString
       val text = btm.text
@@ -133,10 +133,12 @@ object IOResolver {
     // get output of all themes
     case binding: BioMention if binding matches "Binding" =>
       val input:Seq[IO] =
-        for {theme:Mention <- binding.arguments("theme")
-             id = getGroundingIDasString(theme)
-             text = theme.text
-             mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme)} yield IO(id, mods, text)
+        for {
+          theme:Mention <- binding.arguments("theme")
+          id = getGroundingIDasString(theme)
+          text = theme.text
+          mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme)
+        } yield IO(id, mods, text)
       IOSet(input)
 
     // Is it an BioEventMention with a theme?
@@ -169,8 +171,7 @@ object IOResolver {
   def getOutputs(mention: Mention): IOSet = mention match {
 
     // Use the grounding ID of the TextBoundMention
-    // Maybe this one should be removed?
-    // Should this only apply if btm.matches("Entity")
+    // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
       val outputs = for (i <- getInputs(mention)) yield IO(i.id, i.mods, i.text)
       IOSet(outputs)
