@@ -162,6 +162,12 @@ object IOResolver {
       val inputsOfPatients:Seq[IO] = findPatients(reg).flatMap(getInputs)
       IOSet(inputsOfAgents ++ inputsOfPatients)
 
+    // TODO: figure out what should be done here
+    case hydrolysis: BioMention if hydrolysis matches "Hydrolysis" => IOSet.empty
+
+    // TODO: figure out what should be done here
+    case translocation: BioMention if translocation matches "Translocation" => IOSet.empty
+
     // TODO: What is being left out?
     case _ => IOSet.empty
   }
@@ -226,6 +232,12 @@ object IOResolver {
         IO(id, mods, text)
       }
       IOSet(output)
+      
+    // TODO: figure out what should be done here
+    case hydrolysis: BioMention if hydrolysis matches "Hydrolysis" => IOSet.empty
+
+    // TODO: figure out what should be done here
+    case translocation: BioMention if translocation matches "Translocation" => IOSet.empty
 
     // TODO: What is being left out?
     case _ => IOSet.empty
