@@ -55,7 +55,8 @@ class ExactIOSieve extends AssemblySieve {
     // find pairs that satisfy strict IO conditions
     // input of m1 must be output of m2 OR input of m2 must be output m1
     val links:Seq[BioRelationMention] =
-    for {m1 <- mentions
+      for {
+        m1 <- mentions
         // get output representation for m1
         m1Outputs = IOResolver.getOutputs(m1)
         // compare m1's IO to the IO of every other mention
@@ -65,7 +66,8 @@ class ExactIOSieve extends AssemblySieve {
         // don't link if these mentions are the same
         if m1 != m2
         // only yield if the strict IO constraint holds
-        if m1Outputs.isInputOf(m2) || m2Outputs.isInputOf(m1)} yield {
+        if m1Outputs.isInputOf(m2) || m2Outputs.isInputOf(m1)
+      } yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
           case (incoming, outgoing) if m1Outputs.isInputOf(m2) =>
@@ -105,17 +107,19 @@ class ApproximateIOSieve extends AssemblySieve {
     // input of m1 must be approximate output of m2 OR input of m2 must be approximate output m1
     // see IO.fuzzyMatch for details on meaning of "approximate"
     val links:Seq[BioRelationMention] =
-      for {m1 <- mentions
-           // get output representation for m1
-           m1Outputs = IOResolver.getOutputs(m1)
-           // compare m1's IO to the IO of every other mention
-           m2 <- mentions
-           // get output representation for m2
-           m2Outputs = IOResolver.getOutputs(m2)
-           // don't link if these mentions are the same
-           if m1 != m2
-           // only yield if the approximate IO constraint holds
-           if m1Outputs.isFuzzyInputOf(m2) || m2Outputs.isFuzzyInputOf(m1)} yield {
+      for {
+        m1 <- mentions
+        // get output representation for m1
+        m1Outputs = IOResolver.getOutputs(m1)
+        // compare m1's IO to the IO of every other mention
+        m2 <- mentions
+        // get output representation for m2
+        m2Outputs = IOResolver.getOutputs(m2)
+        // don't link if these mentions are the same
+        if m1 != m2
+        // only yield if the approximate IO constraint holds
+        if m1Outputs.isFuzzyInputOf(m2) || m2Outputs.isFuzzyInputOf(m1)
+      } yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
           case (incoming, outgoing) if m1Outputs.isFuzzyInputOf(m2) =>
@@ -162,21 +166,23 @@ class PrepositionLinkSieve extends AssemblySieve {
     // rule set only produces target RelationMentions
 
     val assembledMentions =
-      (for {(doc, mentionsFromReach) <- validMentions.groupBy(_.document)
-           // create a new state with just the mentions from a particular doc
-           // note that a doc is as granular as a section of a paper
-           oldState = State(mentionsFromReach)
-           // extract the assembly mentions from the subset of reach mentions
-           // belonging to the same doc.
-           // NOTE: Odin expects all mentions in the state to belong to the same doc!
-           m <- ee.extractFrom(doc, oldState)
-           // TODO: this may not be necessary
-           // ensure that mention is one related to Assembly
-           if m matches this.label} yield m.asInstanceOf[RelationMention])
-        .toVector
+      for {
+        (doc, mentionsFromReach) <- validMentions.groupBy(_.document)
+        // create a new state with just the mentions from a particular doc
+        // note that a doc is as granular as a section of a paper
+        oldState = State(mentionsFromReach)
+        // extract the assembly mentions from the subset of reach mentions
+        // belonging to the same doc.
+        // NOTE: Odin expects all mentions in the state to belong to the same doc!
+        m <- ee.extractFrom(doc, oldState)
+        // TODO: this may not be necessary
+        // ensure that mention is one related to Assembly
+        if m matches this.label
+      } yield m.asInstanceOf[RelationMention]
+
     // validate assembled mentions
     //val filteredAssembledMentions = filterAssembled(assembledMentions)
-    AssemblyGraph(assembledMentions, this.name)
+    AssemblyGraph(assembledMentions.toVector, this.name)
   }
 }
 
