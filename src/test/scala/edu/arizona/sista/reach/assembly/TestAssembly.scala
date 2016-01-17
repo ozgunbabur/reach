@@ -14,94 +14,102 @@ class TestAssembly extends FlatSpec with Matchers {
   val mentions = getBioMentions(text)
   val ubiqs = mentions filter (_ matches "Ubiquitination")
   val regs = mentions.filter(_ matches "Positive_regulation")
-  val ubiq1Input = IOResolver.getInput(ubiqs.head).get
+  val inputsForUbiq = IOResolver.getInputs(ubiqs.head)
 
   text should "contain 2 ubiquitinations that are NOT exactly equal" taggedAs(AssemblyTests) in {
     // there should be two ubiquitinations
     ubiqs should have size (2)
     // these are not true equivalent entities
-    ubiq1Input.isInputOf(ubiqs.last) should not be (true)
+    IOResolver.getInputs(ubiqs.head) == IOResolver.getInputs(ubiqs.last) should not be (true)
   }
 
   it should "contain 2 ubiquitinations that are APPROXIMATELY equal" taggedAs(AssemblyTests) in {
-    ubiq1Input.isFuzzyInputOf(ubiqs.last) should be (true)
+    // there should be two ubiquitinations
+    ubiqs should have size (2)
+    IOResolver.getInputs(ubiqs.head).isProperFuzzySubsetOf(IOResolver.getInputs(ubiqs.last)) should be (true)
   }
 
-  regtext should "take Ubiquitinated Ras (UNMUTATED) as input" taggedAs(AssemblyTests) in {
+  // NOTE: used to be "take UBIQUITINATED Ras (UNMUTATED) as input"
+  regtext should "take Ras (UNMUTATED) as input" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
 
     IOResolver.hasInput(reg) should be (true)
-    val regInput = IOResolver.getInput(reg).get
+    val inputsForReg = IOResolver.getInputs(reg)
 
-    regInput.mods contains "Mutant" should not be (true)
+    // The input should not involve a Mutant
+    inputsForReg.exists(i => i.mods contains "Mutant" ) should not be (true)
 
-    val nonMutantUbiq:Seq[IO] =
-      mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
+    val nonMutants:Seq[IO] =
+      mentions filter (_ matches "Entity") flatMap IOResolver.getOutputs filterNot(_.mods contains "Mutant")
 
-    nonMutantUbiq should have size (1)
-
-    regInput should equal (nonMutantUbiq.head)
-    regInput.fuzzyMatch(nonMutantUbiq.head) should be (true)
+    nonMutants should have size (2)
+    val nonMutantRas = nonMutants.filter(_.text.equalsIgnoreCase("Ras")).head
+    inputsForReg should equal (nonMutantRas)
+    inputsForReg.isProperFuzzySubsetOf(nonMutantRas) should be (true)
   }
 
 
-  it should "produce Ubiquitinated Ras (UNMUTATED) + Regulation as output" taggedAs(AssemblyTests) in {
+  it should "produce Ubiquitinated Ras (UNMUTATED) as output" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
 
     IOResolver.hasOutput(reg) should be (true)
-    val regOutput = IOResolver.getOutput(reg).get
+    val outputsForReg = IOResolver.getOutputs(reg)
 
-    regOutput.mods contains "Mutant" should not be (true)
+    outputsForReg.exists(_.mods contains "Mutant") should not be (true)
 
-    val nonMutantUbiq:Seq[IO] =
-      mentions filter (_ matches "Ubiquitination") flatMap IOResolver.getOutput filterNot(_.mods contains "Mutant")
+    val nonMutants:Seq[IO] =
+      mentions
+        .filter(_ matches "Entity")
+        .flatMap(IOResolver.getOutputs)
+        .filterNot(m => (m.mods contains "Mutant"))
 
-    nonMutantUbiq should have size (1)
+    nonMutants should have size (2)
 
-    // Should fail because of + Regulation on reg output
-    regOutput should not equal (nonMutantUbiq.head)
+    val nonMutantRas = nonMutants.filter(_.text.equalsIgnoreCase("Ras")).head
+    // Should fail because input is now considered to be Ras (NOT Ras + Ubiq.)
+    outputsForReg should not equal (nonMutantRas)
     // Fuzzy match because of Regulation on regOutput
-    regOutput.fuzzyMatch(nonMutantUbiq.head) should be (true)
+    outputsForReg.exists(_.fuzzyMatch(nonMutantRas)) should be (true)
   }
 
   // make sure input checks are working
-  "IOResolver(m).getInput.get.isInputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getInputs.isInputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getInput(reg).get.isInputOf(reg) should be (true)
+    IOResolver.getInputs(reg).exists(_.isInputOf(reg)) should be (true)
   }
 
-  "IOResolver(m).getInput.get.isFuzzyInputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getInputs.isFuzzyInputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getInput(reg).get.isFuzzyInputOf(reg) should be (true)
+    IOResolver.getInputs(reg).exists(_.isFuzzyInputOf(reg)) should be (true)
   }
 
   // make sure output checks are working
-  "IOResolver(m).getOutput.get.isOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getOutputs.get.isOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getOutput(reg).get.isOutputOf(reg) should be (true)
-    IOResolver.getOutput(reg).get.isFuzzyOutputOf(reg) should be (true)
+    IOResolver.getOutputs(reg).exists(_.isOutputOf(reg)) should be (true)
+    IOResolver.getOutputs(reg).exists(_.isFuzzyOutputOf(reg)) should be (true)
   }
 
-  "IOResolver(m).getOutput.get.isFuzzyOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
+  "IOResolver(m).getOutputs.get.isFuzzyOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getOutput(reg).get.isFuzzyOutputOf(reg) should be (true)
+    IOResolver.getOutputs(reg).exists(_.isFuzzyOutputOf(reg)) should be (true)
   }
 }
