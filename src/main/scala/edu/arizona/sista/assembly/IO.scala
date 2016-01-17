@@ -122,19 +122,27 @@ object IOResolver {
       val mods = getRelevantModifications(btm) ++ Set(btm.label) // Add the label of the btm as well
       IOSet(IO(id, mods, text))
 
+    // get output of all themes
+    case binding: BioMention if binding matches "Binding" =>
+      val input:Seq[IO] =
+        for {theme:Mention <- binding.arguments("theme")
+             id = getGroundingIDasString(theme)
+             text = theme.text
+             mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme)} yield IO(id, mods, text)
+      IOSet(input)
+
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
-      // return the grounding id for the theme
-      // NOTE: assumes only a single theme
-      val m = bemWithTheme.arguments("theme").head
-      val id = getGroundingIDasString(m)
-      val text = m.text
-      val mods =
-      // Get theme's label (PTM)
-        Set(m.label) ++
-          // Get relevant modifications
-          getRelevantModifications(m)
-      IOSet(IO(id, mods, text))
+      // get output of each theme
+      val input:Seq[IO] =
+        for {theme:Mention <- bemWithTheme.arguments("theme")
+             id = getGroundingIDasString(theme)
+             text = theme.text
+             // Get theme's label (PTM)
+             // Get relevant modifications
+             mods = Set(theme.label) ++ getRelevantModifications(theme)
+            } yield IO(id, mods, text)
+      IOSet(input)
 
     // Do we have a regulation?
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
@@ -158,20 +166,28 @@ object IOResolver {
       val outputs = for (i <- getInputs(mention)) yield IO(i.id, i.mods, i.text)
       IOSet(outputs)
 
+    // TODO: Should this be 1 output (i.e. the complex?)
+    // If so, how should the grounding ID work?
+    // get output of all themes
+    case binding: BioMention if binding matches "Binding" =>
+      val output:Seq[IO] =
+        for {theme:Mention <- binding.arguments("theme")
+             id = getGroundingIDasString(theme)
+             text = theme.text
+             // include binding label
+             mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme) ++ Set(binding.label)} yield IO(id, mods, text)
+      IOSet(output)
+
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
-      // return the grounding id for the theme
-      val m = bemWithTheme.arguments("theme").head
-      val id = getGroundingIDasString(m)
-      val text = m.text
-      val mods =
-        // Get event label (PTM)
-        Set(bemWithTheme.label) ++
-          // Get relevant modifications
-          getRelevantModifications(m)
-      IOSet(IO(id, mods, text))
+      // get input of each theme
+      val input = getInputs(bemWithTheme)
+      // add the event's label to the set of mods for each input
+      val output = input.map(i => IO(i.id, i.mods ++ Set(bemWithTheme.label), i.text))
+      IOSet(output)
 
     // Do we have a regulation?
+    // TODO: replace .head with for ... yield
     case reg : BioMention if reg.matches("ComplexEvent") && reg.arguments.contains("controller") && reg.arguments.contains("controlled") =>
       val m = reg.arguments("controlled").head
       val id = getGroundingIDasString(m)
