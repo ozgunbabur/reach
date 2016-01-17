@@ -21,25 +21,38 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
   // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
   def assemble(mentions:Seq[Mention]):Seq[AssemblyGraph] = sieves.map(_.assemble(mentions))
 
+  // Group Assembly RelationMentions by ("before" arg's output, "after" arg's ouputs)
+  // return a Seq[(distinct assembly RM, count of evidence)]
+  def group(am: Seq[RelationMention]):Seq[(RelationMention, Int)]= {
+   am
+     .groupBy(m => (IOResolver.getOutputs(m.arguments("before").head), IOResolver.getOutputs(m.arguments("after").head) ))
+     .values
+     .map(v => (v.head, v.size))
+     .toSeq
+  }
+
   def displayAssembledMention(m: Mention):Unit = {
     val before = m.arguments("before").head
     val after = m.arguments("after").head
     val input = IOResolver.getOutputs(before)
     val output = IOResolver.getOutputs(after)
     val text =
-      if ((before.document != after.document) && (before.sentence != after.sentence))
+      if ((before.document != after.document) || (before.sentence != after.sentence))
+        // TODO: Add sentence window to L & R of before and after
         s"${before.text} ... ${after.text}"
       else m.text
     val representation =
        s"""mention:             ${m.label}
           |foundBy:             ${m.foundBy}
           |text:                $text
-          |output of "before":  $input
-          |"before" label:      ${before.label}
+          |"before" output:     $input
           |"before" text:       ${before.text}
-          |output of "after":   $output
-          |"after" label:       ${after.label}
+          |"before" label:      ${before.label}
+          |"before" doc id:     ${before.document.id.get}
+          |"after" output:      $output
           |"after" text:        ${after.text}
+          |"after" label:       ${after.label}
+          |"after" doc id:      ${after.document.id.get}
           |""".stripMargin
     println(representation)
   }
