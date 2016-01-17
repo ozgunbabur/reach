@@ -116,7 +116,16 @@ class TestAssembly extends FlatSpec with Matchers {
 
   }
 
+  it should "have 1 output" taggedAs(AssemblyTests) in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
 
+    IOResolver.hasOutput(reg) should be (true)
+    IOResolver.getOutputs(reg) should have size (1)
+  }
+  
   it should "produce Ubiquitinated Ras (UNMUTATED) as output" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
