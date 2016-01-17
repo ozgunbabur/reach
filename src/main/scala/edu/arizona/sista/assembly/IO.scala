@@ -119,12 +119,13 @@ object IOResolver {
     case btm: BioTextBoundMention =>
       val id = btm.xref.get.printString
       val text = btm.text
-      val mods = getRelevantModifications(btm)
+      val mods = getRelevantModifications(btm) ++ Set(btm.label) // Add the label of the btm as well
       IOSet(IO(id, mods, text))
 
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains("theme") =>
       // return the grounding id for the theme
+      // NOTE: assumes only a single theme
       val m = bemWithTheme.arguments("theme").head
       val id = getGroundingIDasString(m)
       val text = m.text
