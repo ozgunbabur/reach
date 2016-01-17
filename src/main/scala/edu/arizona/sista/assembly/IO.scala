@@ -96,7 +96,7 @@ object IOResolver {
   def findAgents(m: Mention):Seq[Mention] = m match {
     // avoid recursive calls, as too much information can be lost
     case hasCause if hasCause.arguments contains "cause" => hasCause.arguments("cause")
-    case hasController if hasController.arguments contains "controller" => hasController.arguments("controlled")
+    case hasController if hasController.arguments contains "controller" => hasController.arguments("controller")
     case naked if naked.arguments.isEmpty => Seq(naked)
   }
 
@@ -232,7 +232,7 @@ object IOResolver {
         IO(id, mods, text)
       }
       IOSet(output)
-      
+
     // TODO: figure out what should be done here
     case hydrolysis: BioMention if hydrolysis matches "Hydrolysis" => IOSet.empty
 
