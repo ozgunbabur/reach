@@ -46,6 +46,7 @@ class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializabl
   private val members = m.toSet
   override def empty: IOSet = new IOSet(Set.empty[IO])
   def + (elem: IO) : IOSet = new IOSet(members ++ Set(elem))
+  def ++ (elem: IOSet) : IOSet = new IOSet(members ++ elem)
   def - (elem: IO) : IOSet = new IOSet(members.filterNot(_.equals(elem)))
   def contains (elem: IO) : Boolean = members.contains(elem)
   def iterator : Iterator[IO] = members.iterator
@@ -116,12 +117,15 @@ object IOResolver {
   }
 
   // Get labels for PTM and Mutant mods
-  def getRelevantModifications(m: Mention): Set[String] =
-    m.toBioMention.modifications.flatMap {
+  def getRelevantModifications(m: Mention): Set[String] = {
+    val mods = m.toBioMention.modifications.flatMap {
       case ptm: PTM => Set(ptm.label)
       case mutant: Mutant => Set(mutant.label)
       case _ => Set.empty[String]
     }
+    // add mention's label!
+    mods ++ Set(m.label)
+  }
 
   // Represent the input to a Mention
   // TODO: handle remaining special cases (Hydrolysis, Translocation)
@@ -132,7 +136,7 @@ object IOResolver {
     case btm: BioTextBoundMention =>
       val id = btm.xref.get.printString
       val text = btm.text
-      val mods = getRelevantModifications(btm) ++ Set(btm.label) // Add the label of the btm as well
+      val mods = getRelevantModifications(btm)
       IOSet(IO(id, mods, text))
 
     // get output of all themes
@@ -142,7 +146,7 @@ object IOResolver {
           theme:Mention <- binding.arguments(THEME)
           id = getGroundingIDasString(theme)
           text = theme.text
-          mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme)
+          mods:Set[String] = getRelevantModifications(theme)
         } yield IO(id, mods, text)
       IOSet(input)
 
@@ -154,9 +158,8 @@ object IOResolver {
           theme:Mention <- bemWithTheme.arguments(THEME)
           id = getGroundingIDasString(theme)
           text = theme.text
-          // Get theme's label (PTM)
-          // Get relevant modifications
-          mods = Set(theme.label) ++ getRelevantModifications(theme)
+          // Get relevant modifications of theme (including its label)
+          mods = getRelevantModifications(theme)
         } yield IO(id, mods, text)
       IOSet(input)
 
@@ -198,7 +201,7 @@ object IOResolver {
           id = getGroundingIDasString(theme)
           text = theme.text
           // include binding label
-          mods:Set[String] = Set(theme.label) ++ getRelevantModifications(theme) ++ Set(binding.label)
+          mods:Set[String] = getRelevantModifications(theme) ++ Set(binding.label)
         } yield IO(id, mods, text)
       IOSet(output)
 
@@ -225,9 +228,7 @@ object IOResolver {
         } yield {
           // assemble the mods per reg output
           val mods =
-            // the label of the controlled (PTM?)
-            Set(controlled.label) ++
-            // the mods of the theme
+            // the mods of the theme (including its label)
             getRelevantModifications(controlled) ++
             // the mods of the theme of the theme
             modsFromPatients
