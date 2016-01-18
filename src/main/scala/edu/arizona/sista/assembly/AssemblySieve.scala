@@ -23,21 +23,25 @@ trait AssemblySieve {
   // (i.e. ignore mentions related to context, cell types, species, etc)
   // an assembled mention should not join the same Entity
   // (i.e. "before" & "after" should not both point to Entity e)
-  def filterAssembled(am: Seq[RelationMention]):Seq[RelationMention]= {
-    am.filter{ a =>
-      val before = a.arguments("before").head
-      val after = a.arguments("after").head
+  def filterAssembled(ams: Seq[RelationMention]):Seq[RelationMention]= {
+    for {
+      am <- ams
+      before = am.arguments("before").head
+      after = am.arguments("after").head
+      outputsOfBefore = IOResolver.getOutputs(before)
+      inputsOfAfter = IOResolver.getInputs(after)
+      outputsOfAfter = IOResolver.getOutputs(after)
       // only assemble things that involve PossibleControllers
-      (before matches "PossibleController") && (after matches "PossibleController")
-    }.filterNot{ a =>
-      val before = a.arguments("before").head
-      val after = a.arguments("after").head
-      // remove assembled mentions where the before and after is the same Entity
-      (IOResolver.getOutputs(before) == IOResolver.getOutputs(after)) &&
-        (a.arguments("before").head matches "Entity") &&
-        (a.arguments("after").head matches "Entity")
-    }
-    //TODO: enforce constraint that ensures output of "before" != output of "after"
+      if (before matches "PossibleController") && (after matches "PossibleController")
+      // "after" shouldn't be an Entity
+      // entities don't transform input (i.e.
+      if !(after matches "Entity")
+      // ensure output of "before" != output of "after"
+      if outputsOfBefore != outputsOfAfter
+      // input of "after" != output of "after"
+      // i.e. there should be a change of state in the IO
+      if inputsOfAfter != outputsOfAfter
+    } yield am
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
