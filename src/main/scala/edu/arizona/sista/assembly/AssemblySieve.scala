@@ -11,7 +11,7 @@ trait AssemblySieve {
   val label = "Assembly"
   val labels = Seq(label)
   // the name of the sieve
-  def name = this.getClass.getName
+  def name = this.getClass.getSimpleName
 
   // takes mentions and produces an AssemblyGraph
   def assemble(mentions:Seq[Mention]): AssemblyGraph
