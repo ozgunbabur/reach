@@ -12,7 +12,8 @@ vars:
   incomingbeforetimeprep: "</^prep_(before|prior_to)$/"
   incomingaftertimeprep: "</^prep_(after|following)$/"
   incomingtype: "PossibleController"
-  outgoingtype: "PossibleController"
+  # "after" should be some kind of Event that transforms "before"
+  outgoingtype: "Event"
   beforelemmasyns: "/^(before|prior|precede)$/"
   afterlemmasyns: "/^(follow|after)$/"
 
