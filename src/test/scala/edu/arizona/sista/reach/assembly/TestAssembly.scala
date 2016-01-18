@@ -22,10 +22,10 @@ class TestAssembly extends FlatSpec with Matchers {
     val egf = text1mns.filter(_.text.equalsIgnoreCase("egf"))
     gab should have size (1)
     egf should have size (1)
-    IOResolver.getOutputs(gab.head).isInputOf(text1regs.head)
-    IOResolver.getOutputs(gab.head).isFuzzyInputOf(text1regs.head)
-    IOResolver.getOutputs(egf.head).isInputOf(text1regs.head)
-    IOResolver.getOutputs(egf.head).isFuzzyInputOf(text1regs.head)
+    IOResolver.getOutputs(gab.head).isCompleteInputOf(text1regs.head)
+    IOResolver.getOutputs(gab.head).isCompleteFuzzyInputOf(text1regs.head)
+    IOResolver.getOutputs(egf.head).isCompleteInputOf(text1regs.head)
+    IOResolver.getOutputs(egf.head).isCompleteFuzzyInputOf(text1regs.head)
   }
 
   it should "have 1 output" taggedAs(AssemblyTests) in {
@@ -37,17 +37,25 @@ class TestAssembly extends FlatSpec with Matchers {
     text1regs should have size (1)
     val gab = text1mns.filter(_.text.equalsIgnoreCase("gab1"))
     // require the + Phos feature
-    IOResolver.getOutputs(gab.head).isOutputOf(text1regs.head) should not be (true)
+    IOResolver.getOutputs(gab.head).isCompleteOutputOf(text1regs.head) should not be (true)
     // fuzzy matching should work
-    IOResolver.getOutputs(gab.head).isFuzzyInputOf(text1regs.head)
+    IOResolver.getOutputs(gab.head).isCompleteFuzzyOutputOf(text1regs.head) should be (true)
+    // not a subset b/c + Phos is missing from gab
+    IOResolver.getOutputs(gab.head).isSubsetOf(IOResolver.getOutputs(text1regs.head)) should be (false)
+    // fuzzy subset even though + Phos is missing from gab
+    IOResolver.getOutputs(gab.head).isFuzzySubsetOf(IOResolver.getOutputs(text1regs.head)) should be (true)
+    // outputs should be same size
+    IOResolver.getOutputs(gab.head).isProperSubsetOf(IOResolver.getOutputs(text1regs.head)) should be (false)
+    IOResolver.getOutputs(gab.head).isProperFuzzySubsetOf(IOResolver.getOutputs(text1regs.head)) should be (false)
     val phos = text1mns filter(_ matches "Phosphorylation")
     phos.size should be (1)
-    IOResolver.getOutputs(phos.head).isOutputOf(text1regs.head) should be (true)
-    IOResolver.getOutputs(text1regs.head).isOutputOf(phos.head) should be (true)
-    IOResolver.getOutputs(phos.head).isFuzzyOutputOf(text1regs.head) should be (true)
-    IOResolver.getOutputs(text1regs.head).isFuzzyOutputOf(phos.head) should be (true)
+    IOResolver.getOutputs(phos.head).isCompleteOutputOf(text1regs.head) should be (true)
+    IOResolver.getOutputs(text1regs.head).isCompleteOutputOf(phos.head) should be (true)
+    IOResolver.getOutputs(phos.head).isCompleteFuzzyOutputOf(text1regs.head) should be (true)
+    IOResolver.getOutputs(phos.head).isFuzzySubsetOf(IOResolver.getOutputs(text1regs.head)) should be (true)
+    IOResolver.getOutputs(text1regs.head).isCompleteFuzzyOutputOf(phos.head) should be (true)
     IOResolver.getOutputs(phos.head) == IOResolver.getOutputs(text1regs.head) should be (true)
-    IOResolver.getOutputs(phos.head).isFuzzyOutputOf(text1regs.head) should be (true)
+    IOResolver.getOutputs(phos.head).isCompleteFuzzyOutputOf(text1regs.head) should be (true)
   }
 
   // test input-output comparisons
@@ -69,7 +77,11 @@ class TestAssembly extends FlatSpec with Matchers {
   it should "contain 2 ubiquitinations that are APPROXIMATELY equal" taggedAs(AssemblyTests) in {
     // there should be two ubiquitinations
     ubiqs should have size (2)
-    IOResolver.getInputs(ubiqs.head).isProperFuzzySubsetOf(IOResolver.getInputs(ubiqs.last)) should be (true)
+    // sizes are the same, so can't be a ProperFuzzySubset
+    IOResolver.getInputs(ubiqs.head).isProperFuzzySubsetOf(IOResolver.getInputs(ubiqs.last)) should be (false)
+    IOResolver.getInputs(ubiqs.head).isFuzzySubsetOf(IOResolver.getInputs(ubiqs.last)) should be (true)
+    // fuzzy match is successful for all elements of A!
+    IOResolver.getInputs(ubiqs.head).isFuzzySubsetOf(IOResolver.getInputs(ubiqs.last)) should be (true)
   }
 
   regtext should "have two inputs" taggedAs(AssemblyTests) in {
@@ -99,20 +111,29 @@ class TestAssembly extends FlatSpec with Matchers {
 
     // compare reg input to ras input
     inputsForReg should not equal (nonMutantRas)
-    inputsForReg.isFuzzySubsetOf(nonMutantRas) should be (true)
+    // all IO for nonMutantRas fuzzyMatches IO for inputsForReg
+    inputsForReg fuzzyContains nonMutantRas should be (true)
+    IOSet(nonMutantRas).isFuzzySubsetOf(inputsForReg) should be (true)
+    // the reverse is not true; inputsForReg.size > nonMutantRas.size
+    inputsForReg.isFuzzySubsetOf(nonMutantRas) should be (false)
     // reg input should also include smad!
     inputsForReg.isProperFuzzySubsetOf(nonMutantRas) should not be (true)
 
     // compare reg input to smad input
     inputsForReg should not equal (smad)
-    inputsForReg.isFuzzySubsetOf(smad) should be (true)
+    IOSet(smad).isFuzzySubsetOf(inputsForReg) should be (true)
+    // the reverse should not be true
+    inputsForReg.isFuzzySubsetOf(smad) should be (false)
     // reg input should also include ras!
     inputsForReg.isProperFuzzySubsetOf(smad) should not be (true)
 
     // compare reg input to smad + Ras outputs
     inputsForReg should equal (smadPlusRas)
+    // ... then these also follow
+    inputsForReg.isSubsetOf(smadPlusRas) should be (true)
     inputsForReg.isFuzzySubsetOf(smadPlusRas) should be (true)
-    inputsForReg.isProperFuzzySubsetOf(smadPlusRas) should be (true)
+    // sizes are equal, so A can't be a proper subset of B
+    inputsForReg.isProperFuzzySubsetOf(smadPlusRas) should be (false)
 
   }
 
@@ -125,7 +146,7 @@ class TestAssembly extends FlatSpec with Matchers {
     IOResolver.hasOutput(reg) should be (true)
     IOResolver.getOutputs(reg) should have size (1)
   }
-  
+
   it should "produce Ubiquitinated Ras (UNMUTATED) as output" taggedAs(AssemblyTests) in {
     val mentions = getBioMentions(regtext)
     val regs = mentions.filter(_ matches "Positive_regulation")
@@ -158,7 +179,9 @@ class TestAssembly extends FlatSpec with Matchers {
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getInputs(reg).isInputOf(reg) should be (true)
+    IOResolver.getInputs(reg).isCompleteInputOf(reg) should be (true)
+    // only true if B contains a subset of A
+    IOResolver.getInputs(reg).isPartialInputOf(reg) should be (false)
   }
 
   "IOResolver(m).getInputs.isFuzzyInputOf(m)" should "be true" taggedAs(AssemblyTests) in {
@@ -166,7 +189,21 @@ class TestAssembly extends FlatSpec with Matchers {
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getInputs(reg).isFuzzyInputOf(reg) should be (true)
+    IOResolver.getInputs(reg).isCompleteFuzzyInputOf(reg) should be (true)
+    // only true if B fuzzyContains a subset of A
+    IOResolver.getInputs(reg).isPartialFuzzyInputOf(reg) should be (false)
+  }
+
+  // make sure input <-> output checks are working
+  "IOResolver(m).getInputs.isOutputOf(m)" should "be false" taggedAs(AssemblyTests) in {
+    val mentions = getBioMentions(regtext)
+    val regs = mentions.filter(_ matches "Positive_regulation")
+    regs should have size (1)
+    val reg = regs.head
+    // input.size > output.size; output is Ras (+ Ubiq); input is Ras (- Ubiq) & SMAD
+    IOResolver.getInputs(reg).isCompleteOutputOf(reg) should be (false)
+    // B does not fuzzyContain all members of A
+    IOResolver.getInputs(reg).isFuzzySubsetOf(IOResolver.getOutputs(reg)) should be (false)
   }
 
   // make sure output checks are working
@@ -175,8 +212,8 @@ class TestAssembly extends FlatSpec with Matchers {
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getOutputs(reg).isOutputOf(reg) should be (true)
-    IOResolver.getOutputs(reg).isFuzzyOutputOf(reg) should be (true)
+    IOResolver.getOutputs(reg).isCompleteOutputOf(reg) should be (true)
+    IOResolver.getOutputs(reg).isCompleteFuzzyOutputOf(reg) should be (true)
   }
 
   "IOResolver(m).getOutputs.isFuzzyOutputOf(m)" should "be true" taggedAs(AssemblyTests) in {
@@ -184,6 +221,6 @@ class TestAssembly extends FlatSpec with Matchers {
     val regs = mentions.filter(_ matches "Positive_regulation")
     regs should have size (1)
     val reg = regs.head
-    IOResolver.getOutputs(reg).isFuzzyOutputOf(reg) should be (true)
+    IOResolver.getOutputs(reg).isCompleteFuzzyOutputOf(reg) should be (true)
   }
 }
