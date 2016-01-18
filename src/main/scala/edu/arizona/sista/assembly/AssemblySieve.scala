@@ -62,19 +62,26 @@ class ExactIOSieve extends AssemblySieve {
       for {
         m1 <- mentions
         // get output representation for m1
-        m1Outputs = IOResolver.getOutputs(m1)
+        m1inputs = IOResolver.getInputs(m1)
+        // get output representation for m1
+        m1outputs = IOResolver.getOutputs(m1)
         // compare m1's IO to the IO of every other mention
         m2 <- mentions
+        // get output representation for m1
+        m2inputs = IOResolver.getInputs(m2)
         // get output representation for m2
-        m2Outputs = IOResolver.getOutputs(m2)
+        m2outputs = IOResolver.getOutputs(m2)
         // don't link if these mentions are the same
+        // TODO: strict mention equality isn't inclusive enough for this check
+        // Look at representation of mentions?
         if m1 != m2
         // only yield if the strict IO constraint holds
-        if m1Outputs.isInputOf(m2) || m2Outputs.isInputOf(m1)
+        // all outputs of one of the mentions must be contained by the inputs of the other mention
+        if m1outputs.isSubsetOf(m2inputs) || m2outputs.isSubsetOf(m1inputs)
       } yield {
         val result = (m1, m2) match {
-          // mention 2's input is coming from the output of mention 1
-          case (incoming, outgoing) if m1Outputs.isInputOf(m2) =>
+          // all of mention 1's output serves is contained by the input to mention 2
+          case (incoming, outgoing) if m1outputs.isSubsetOf(m2inputs) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -82,8 +89,8 @@ class ExactIOSieve extends AssemblySieve {
               document = incoming.document,
               keep = true,
               foundBy = this.name)
-          // mention 1's input is coming from the output of mention 2
-          case (outgoing, incoming) if m2Outputs.isInputOf(m1) =>
+          // all of mention 2's output serves is contained by the input to mention 1
+          case (outgoing, incoming) if m2outputs.isSubsetOf(m1inputs) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -114,19 +121,21 @@ class ApproximateIOSieve extends AssemblySieve {
       for {
         m1 <- mentions
         // get output representation for m1
-        m1Outputs = IOResolver.getOutputs(m1)
+        m1inputs = IOResolver.getInputs(m1)
+        // get output representation for m1
+        m1outputs = IOResolver.getOutputs(m1)
         // compare m1's IO to the IO of every other mention
         m2 <- mentions
+        // get output representation for m1
+        m2inputs = IOResolver.getInputs(m2)
         // get output representation for m2
-        m2Outputs = IOResolver.getOutputs(m2)
-        // don't link if these mentions are the same
-        if m1 != m2
+        m2outputs = IOResolver.getOutputs(m2)
         // only yield if the approximate IO constraint holds
-        if m1Outputs.isFuzzyInputOf(m2) || m2Outputs.isFuzzyInputOf(m1)
+        if m1outputs.isFuzzySubsetOf(m2inputs) || m2outputs.isFuzzySubsetOf(m1inputs)
       } yield {
         val result = (m1, m2) match {
           // mention 2's input is coming from the output of mention 1
-          case (incoming, outgoing) if m1Outputs.isFuzzyInputOf(m2) =>
+          case (incoming, outgoing) if m1outputs.isFuzzySubsetOf(m2inputs) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
@@ -135,7 +144,7 @@ class ApproximateIOSieve extends AssemblySieve {
               keep = true,
               foundBy = this.name)
           // mention 1's input is coming from the output of mention 2
-          case (outgoing, incoming) if m2Outputs.isFuzzyInputOf(m1) =>
+          case (outgoing, incoming) if m2outputs.isFuzzySubsetOf(m1inputs) =>
             // the assembly link
             new BioRelationMention(labels = this.labels,
               arguments = Map(Architecture.predecessor -> Seq(incoming), Architecture.successor -> Seq(outgoing)),
