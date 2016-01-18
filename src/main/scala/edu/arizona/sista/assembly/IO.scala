@@ -38,44 +38,80 @@ case class IO(id: String, mods: Set[String], text: String) {
 // This class provides methods to simplify comparisons between these sets
 //
 // NOTE: though I am unaware of any cases of an event producing multiple outputs,
-// a decision was made to represent outputs as as as set of outputs as well.
+// a decision was made to represent outputs as a set of outputs as well.
 // I have switched back to using a single type (IO) to represent both inputs and outputs.
 // So far this has not been a problem.
 class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializable {
 
   private val members = m.toSet
-  override def empty: IOSet = new IOSet(Set.empty[IO])
-  def + (elem: IO) : IOSet = new IOSet(members ++ Set(elem))
-  def ++ (elem: IOSet) : IOSet = new IOSet(members ++ elem)
-  def - (elem: IO) : IOSet = new IOSet(members.filterNot(_.equals(elem)))
-  def contains (elem: IO) : Boolean = members.contains(elem)
-  def iterator : Iterator[IO] = members.iterator
+  override def empty:IOSet = new IOSet(Set.empty[IO])
+  def + (elem: IO):IOSet = new IOSet(members ++ Set(elem))
+  def ++ (elem: IOSet):IOSet = new IOSet(members ++ elem)
+  def - (elem: IO):IOSet = new IOSet(members.filterNot(_.equals(elem)))
+  def -- (elem: IOSet):IOSet = new IOSet(members -- elem)
+  def contains(elem: IO):Boolean = members.exists(_.equals(elem))
+  def fuzzyContains(elem: IO) = members.exists(_.fuzzyMatch(elem))
+
+  def iterator:Iterator[IO] = members.iterator
+
+  def intersection(that:IOSet):IOSet = {
+    IOSet(members.filter(m => that contains m))
+  }
+  def fuzzyIntersection(that:IOSet):IOSet = {
+    IOSet(members.filter(m => that fuzzyContains m))
+  }
+
+  def intersects(that:IOSet):Boolean = members.exists(io => that contains io)
+  def fuzzyIntersects(that:IOSet):Boolean = members.exists(io => that fuzzyContains io)
 
   // Customized equality
   override def equals(o: Any) = o match {
     // for convenience, implicitly convert a naked IO to an IOSet for comparison
     case that: IO => this == IOSet(that)
-    case anotherSet: IOSet => (anotherSet.size == this.size) && this.forall(io => anotherSet contains io)
+    // sets must be the same size
+    case anotherSet: IOSet => (anotherSet.size == this.size) && this.isSubsetOf(anotherSet)
     case _ => false
   }
 
-  def isSubsetOf(that: IOSet):Boolean = members.exists(m => that.exists(_.equals(m)))
+  // All members of A in B
+  def isSubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.equals(m)))
   def isSubsetOf(that: IO):Boolean = this isSubsetOf IOSet(that)
 
-  def isProperSubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.equals(m)))
+  // All members of A in B, but B is larger
+  def isProperSubsetOf(that: IOSet):Boolean = this.size < that.size && this.isSubsetOf(that)
   def isProperSubsetOf(that: IO):Boolean = this isProperSubsetOf IOSet(that)
 
-  def isFuzzySubsetOf(that: IOSet):Boolean = members.exists(m => that.exists(_.fuzzyMatch(m)))
+  // All members of A have fuzzyMatch membership in B
+  def isFuzzySubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.fuzzyMatch(m)))
   def isFuzzySubsetOf(that: IO):Boolean = this isFuzzySubsetOf IOSet(that)
 
-  def isProperFuzzySubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.fuzzyMatch(m)))
+  // All members of A have fuzzyMatch membership in B, but B is larger
+  def isProperFuzzySubsetOf(that: IOSet):Boolean = this.size < that.size && this.isFuzzySubsetOf(that)
   def isProperFuzzySubsetOf(that: IO):Boolean = this isProperFuzzySubsetOf IOSet(that)
 
-  def isOutputOf(m: Mention):Boolean = this == IOResolver.getOutputs(m)
-  def isFuzzyOutputOf(m: Mention):Boolean = this isProperFuzzySubsetOf IOResolver.getOutputs(m)
+  // NOTE: complete means that A & B are the same size AND all IO instances of A are in input of B
+  def isCompleteInputOf(m: Mention):Boolean = this == IOResolver.getInputs(m)
+  def isCompleteFuzzyInputOf(m: Mention):Boolean = {
+    val that = IOResolver.getInputs(m)
+    this.size == that.size && this.isFuzzySubsetOf(that)
+  }
 
-  def isInputOf(m: Mention):Boolean = this == IOResolver.getInputs(m)
-  def isFuzzyInputOf(m: Mention):Boolean = this isProperFuzzySubsetOf IOResolver.getInputs(m)
+  def isCompleteOutputOf(m: Mention):Boolean = this == IOResolver.getOutputs(m)
+  def isCompleteFuzzyOutputOf(m: Mention):Boolean = {
+    val that = IOResolver.getOutputs(m)
+    this.size == that.size && this.isFuzzySubsetOf(that)
+  }
+
+  def isPartialInputOf(m: Mention):Boolean = {
+    val that = IOResolver.getInputs(m)
+    // NOTE: this is NOT the same as isProperSubsetOf; only one member of A has to exist in B
+    this.intersects(that) && this.size < that.size
+  }
+  def isPartialFuzzyInputOf(m: Mention):Boolean = {
+    val that = IOResolver.getInputs(m)
+    // NOTE: this is NOT the same as isProperSubsetOf; only one member of A has to fuzzyMatch a member of B
+    this.fuzzyIntersects(that) && this.size < that.size
+  }
 }
 
 object IOSet {
