@@ -24,7 +24,7 @@ trait AssemblySieve {
   // (i.e. ignore mentions related to context, cell types, species, etc)
   // an assembled mention should not join the same Entity
   // (i.e. "before" & "after" should not both point to Entity e)
-  def filterAssembled(ams: Seq[RelationMention]):Seq[RelationMention]= {
+  def constrainAssembled(ams: Seq[RelationMention]):Seq[RelationMention]= {
     for {
       am <- ams
       before = am.arguments("before").head
@@ -33,10 +33,10 @@ trait AssemblySieve {
       inputsOfAfter = IOResolver.getInputs(after)
       outputsOfAfter = IOResolver.getOutputs(after)
       // only assemble things that involve PossibleControllers
-      if (before matches "PossibleController") && (after matches "PossibleController")
-      // "after" shouldn't be an Entity
-      // entities don't transform input (i.e.
-      if !(after matches "Entity")
+      // lhs and rhs ("after") should be Events
+      // entities don't transform input
+      if before matches "Event"
+      if after matches "Event"
       // ensure output of "before" != output of "after"
       if outputsOfBefore != outputsOfAfter
       // input of "after" != output of "after"
@@ -77,7 +77,7 @@ trait AssemblySieve {
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
-    AssemblyGraph(filterAssembled(assemble(mentions).connected), this.name)
+    AssemblyGraph(constrainAssembled(assemble(mentions).connected), this.name)
   }
 }
 
@@ -133,8 +133,6 @@ class ExactIOSieve extends AssemblySieve {
         }
         result
       }
-    // validate assembled mentions
-    //val filteredLinks = filterAssembled(links)
     AssemblyGraph(links, this.name)
   }
 }
