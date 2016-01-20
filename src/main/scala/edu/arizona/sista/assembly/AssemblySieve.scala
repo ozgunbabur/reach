@@ -3,6 +3,7 @@ package edu.arizona.sista.assembly
 import edu.arizona.sista.odin._
 import edu.arizona.sista.reach.RuleReader
 import edu.arizona.sista.reach.mentions.BioRelationMention
+import edu.arizona.sista.reach.mentions._
 
 
 trait AssemblySieve {
@@ -42,6 +43,37 @@ trait AssemblySieve {
       // i.e. there should be a change of state in the IO
       if inputsOfAfter != outputsOfAfter
     } yield am
+  }
+
+  def assemblyViaRules(rulesPath: String, reachOutput:Seq[Mention]):Seq[RelationMention] = {
+    // read rules and initialize state with existing mentions
+    val rules:String = RuleReader.readResource(rulesPath)
+    val ee = ExtractorEngine(rules)
+    // a subset of the mentions found by REACH, filtered for assembly
+    val validMentions = reachOutput.filter(_ matches "PossibleController")
+    // since we break a paper into sections, we'll need to group the mentions by doc
+    // rule set only produces target RelationMentions
+
+    val assembledMentions =
+      for {
+        (doc, mentionsFromReach) <- validMentions.groupBy(_.document)
+        // create a new state with just the mentions from a particular doc
+        // note that a doc is as granular as a section of a paper
+        oldState = State(mentionsFromReach)
+        // extract the assembly mentions from the subset of reach mentions
+        // belonging to the same doc.
+        // NOTE: Odin expects all mentions in the state to belong to the same doc!
+        m <- ee.extractFrom(doc, oldState)
+        // TODO: this may not be necessary
+        // ensure that mention is one related to Assembly
+        if m matches this.label
+      } yield m.asInstanceOf[RelationMention]
+
+    assembledMentions.filter( _ matches "Assembly" )
+      .map( _.toBioMention)
+      .map( _.asInstanceOf[BioRelationMention] )
+
+    assembledMentions.toSeq
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
@@ -155,8 +187,6 @@ class ApproximateIOSieve extends AssemblySieve {
         }
         result
       }
-    // validate assembled mentions
-    //val filteredLinks = filterAssembled(links)
     AssemblyGraph(links, this.name)
   }
 }
@@ -170,13 +200,11 @@ class PrepositionLinkSieve extends AssemblySieve {
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
 
     // read rules and initialize state with existing mentions
-    val rulesPath = "/edu/arizona/sista/assembly/grammar/assembly.yml"
-    val rules:String = RuleReader.readResource(rulesPath)
-    val ee = ExtractorEngine(rules)
-    // a subset of the mentions found by REACH, filtered for assembly
-    val validMentions = mentions.filter(_ matches "PossibleController")
-    // since we break a paper into sections, we'll need to group the mentions by doc
-    // rule set only produces target RelationMentions
+    val p = "/edu/arizona/sista/assembly/grammar/assembly.yml"
+    val assembledMentions = assemblyViaRules(p, mentions)
+    AssemblyGraph(assembledMentions, this.name)
+  }
+}
 
     val assembledMentions =
       for {
@@ -198,7 +226,6 @@ class PrepositionLinkSieve extends AssemblySieve {
     AssemblyGraph(assembledMentions.toVector, this.name)
   }
 }
-
 
 // TODO: Add sieve to convert regs into Assembly mentions (A causes B, C leads to D, etc)
 
