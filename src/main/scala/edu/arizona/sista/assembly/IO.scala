@@ -170,9 +170,8 @@ object IOResolver {
     // Use the grounding ID of the TextBoundMention
     // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
-      val xref = btm.xref
-      val text = btm.text
       val id = getGroundingIDasString(btm)
+      val text = btm.text
       val mods = getRelevantModifications(btm)
       IOSet(IO(id, mods, text))
 
@@ -230,7 +229,7 @@ object IOResolver {
     // TODO: Should this be 1 output (i.e. the complex?)
     // If so, how should the grounding ID work?
     // get output of all themes
-    case binding: BioMention if binding matches "Binding" =>
+    case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
       val output:Seq[IO] =
         for {
           // process each binding participant
