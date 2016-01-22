@@ -1,5 +1,6 @@
 package edu.arizona.sista.assembly
 
+import com.typesafe.scalalogging.StrictLogging
 import edu.arizona.sista.odin.Mention
 import edu.arizona.sista.reach.mentions._
 
@@ -121,8 +122,7 @@ object IOSet {
   def apply(): IOSet = empty
 }
 
-object IOResolver {
-
+object IOResolver extends StrictLogging {
   val THEME = "theme"
   val CAUSE = "cause"
   val CONTROLLED = "controlled"
@@ -170,13 +170,16 @@ object IOResolver {
     // Use the grounding ID of the TextBoundMention
     // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
+      logger.debug(s"getting inputs for TB...")
       val id = getGroundingIDasString(btm)
       val text = btm.text
       val mods = getRelevantModifications(btm)
+      logger.debug(s"successfully constructed inputs for TB!")
       IOSet(IO(id, mods, text))
 
     // get output of all themes
     case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
+      logger.debug(s"getting inputs for Binding...")
       val input:Seq[IO] =
         for {
           theme:Mention <- binding.arguments(THEME)
@@ -184,11 +187,13 @@ object IOResolver {
           text = theme.text
           mods:Set[String] = getRelevantModifications(theme)
         } yield IO(id, mods, text)
+      logger.debug(s"successfully constructed inputs for Binding!")
       IOSet(input)
 
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains(THEME) =>
       // get output of each theme
+      logger.debug(s"getting inputs for SimpleEvent...")
       val input:Seq[IO] =
         for {
           theme:Mention <- bemWithTheme.arguments(THEME)
@@ -197,13 +202,16 @@ object IOResolver {
           // Get relevant modifications of theme (including its label)
           mods = getRelevantModifications(theme)
         } yield IO(id, mods, text)
+      logger.debug(s"successfully constructed inputs for SimpleEvent!")
       IOSet(input)
 
     // Do we have a proper (valid) regulation?
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains(CONTROLLER) && reg.arguments.contains(CONTROLLED) =>
       // attempt to find the Agent and its Inputs
+      logger.debug(s"getting inputs for reg...")
       val inputsOfAgents:Seq[IO] = findAgents(reg).flatMap(getInputs)
       val inputsOfPatients:Seq[IO] = findPatients(reg).flatMap(getInputs)
+      logger.debug(s"successfully constructed inputs for reg!")
       IOSet(inputsOfAgents ++ inputsOfPatients)
 
     // TODO: figure out what should be done here
@@ -223,13 +231,16 @@ object IOResolver {
     // Use the grounding ID of the TextBoundMention
     // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
+      logger.debug(s"getting outputs for TB...")
       val outputs = for (i <- getInputs(mention)) yield IO(i.id, i.mods, i.text)
+      logger.debug(s"successfully constructed inputs for TB!")
       IOSet(outputs)
 
     // TODO: Should this be 1 output (i.e. the complex?)
     // If so, how should the grounding ID work?
     // get output of all themes
     case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
+      logger.debug(s"getting outputs for Binding...")
       val output:Seq[IO] =
         for {
           // process each binding participant
@@ -239,26 +250,33 @@ object IOResolver {
           // include binding label
           mods:Set[String] = getRelevantModifications(theme) ++ Set(binding.label)
         } yield IO(id, mods, text)
+      logger.debug(s"successfully constructed inputs for Binding!")
       IOSet(output)
 
     // Is it an BioEventMention with a theme?
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains(THEME) =>
+      logger.debug(s"getting outputs for SimpleEvent...")
       // get input of each theme
       val input = getInputs(bemWithTheme)
       // add the event's label (PTM) to the set of mods for each input
       val output = input.map(i => IO(i.id, i.mods ++ Set(bemWithTheme.label), i.text))
+      logger.debug(s"successfully constructed inputs for SimpleEvent!")
       IOSet(output)
 
     // Do we have a proper (valid) regulation?
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains(CONTROLLER) && reg.arguments.contains(CONTROLLED) =>
+      logger.debug(s"getting outputs for ComplexEvent...")
       val output =
         for {
           // process each controlled
           controlled <- reg.arguments(CONTROLLED)
+          _ = logger.debug("\tSearching for groundingID")
           id = getGroundingIDasString(controlled)
+          _ = logger.debug("\tFound groundingID")
           text = controlled.text
           // attempt to convert each controlled into its base entity
           patients = findPatients(controlled)
+          _ = logger.debug("\tFound patients")
           // get the mods of the base entity for each assumed patient
           modsFromPatients = patients.flatMap(getRelevantModifications).toSet
         } yield {
@@ -268,9 +286,11 @@ object IOResolver {
             getRelevantModifications(controlled) ++
             // the mods of the theme of the theme
             modsFromPatients
+          val _ = logger.debug("\tFound relevantMods")
         // a single output per controlled
         IO(id, mods, text)
       }
+      logger.debug(s"successfully constructed inputs for ComplexEvent!")
       IOSet(output)
 
     // TODO: figure out what should be done here
