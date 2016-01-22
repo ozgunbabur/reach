@@ -145,7 +145,7 @@ object IOResolver {
   def getGroundingIDasString(m: Mention): String = {
 
     m.toBioMention match {
-      case tb : BioTextBoundMention => if (tb.xref.nonEmpty) tb.xref.get.printString else s"UNKNOWN-${tb.text.toLowerCase}"
+      case tb : BioTextBoundMention => if (tb.isGrounded) tb.xref.get.printString else s"UNKNOWN-${tb.text.toLowerCase}"
       // recursively unpack this guy
       // TODO: figure out a better way to do this than .head
       case hasPatient if findPatients(m).nonEmpty => getGroundingIDasString(findPatients(m).head)
