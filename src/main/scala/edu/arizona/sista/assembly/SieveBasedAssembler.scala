@@ -25,9 +25,7 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
   // Group Assembly RelationMentions by ("before" arg's output, "after" arg's ouputs)
   // return a Seq[(distinct assembly RM, count of evidence)]
   def group(am: Seq[RelationMention]):Seq[(RelationMention, Int)]= {
-    def simplifyIOforGrouping(ioset:IOSet):String = {
-      ioset.map(io => (io.id, io.mods.mkString(" "))).mkString(" ")
-    }
+    def simplifyIOforGrouping(ioset:IOSet):Set[(String, Set[String])] = ioset.map(io => (io.id, io.mods))
     // We need some way to pick a representative assembly mention for the group
     // One dumb solution is summing the lengths of the "before" and "after" text (i.e. choosing the shortest)
     // The assumption is the shortest string reps should be the easiest to identify as canonical cases of the link
