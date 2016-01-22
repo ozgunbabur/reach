@@ -2,6 +2,7 @@ package edu.arizona.sista.assembly
 
 import java.io.{PrintWriter, File}
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.StrictLogging
 import edu.arizona.sista.odin._
 import edu.arizona.sista.reach.ReachSystem
 import edu.arizona.sista.reach.mentions.BioMention
@@ -10,7 +11,7 @@ import edu.arizona.sista.reach.mentions._
 import scala.util.{Try, Success, Failure}
 
 // Ugh...this needs to be refactored...
-class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
+class SieveBasedAssembler(sieves: Seq[AssemblySieve]) extends StrictLogging {
 
   // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
   def assembleAndFilter(mentions:Seq[Mention], s:Seq[AssemblySieve]):Seq[AssemblyGraph] = s.map(_.assembleAndFilter(mentions))
@@ -22,9 +23,10 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) {
   // Take a seq of AssemblySieve and return a Seq[AssemblyGraph]
   def assemble(mentions:Seq[Mention]):Seq[AssemblyGraph] = sieves.map(_.assemble(mentions))
 
-  // Group Assembly RelationMentions by ("before" arg's output, "after" arg's ouputs)
+  // Group Assembly RelationMentions by ("before" arg's output, "after" arg's outputs)
   // return a Seq[(distinct assembly RM, count of evidence)]
   def group(am: Seq[RelationMention]):Seq[(RelationMention, Int)]= {
+    logger.debug(s"Grouping assembled mentions...")
     def simplifyIOforGrouping(ioset:IOSet):Set[(String, Set[String])] = ioset.map(io => (io.id, io.mods))
     // We need some way to pick a representative assembly mention for the group
     // One dumb solution is summing the lengths of the "before" and "after" text (i.e. choosing the shortest)

@@ -80,5 +80,10 @@ libraryDependencies ++= Seq(
   "jline" % "jline" % "2.12.1",
   "org.apache.lucene" % "lucene-core" % "5.3.1",
   "org.apache.lucene" % "lucene-analyzers-common" % "5.3.1",
-  "org.apache.lucene" % "lucene-queryparser" % "5.3.1"
+  "org.apache.lucene" % "lucene-queryparser" % "5.3.1",
+  // for logging
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
 )
+
+// Logging
+logLevel := Level.Info

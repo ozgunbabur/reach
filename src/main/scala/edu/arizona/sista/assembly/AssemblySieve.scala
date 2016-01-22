@@ -1,12 +1,13 @@
 package edu.arizona.sista.assembly
 
+import com.typesafe.scalalogging.StrictLogging
 import edu.arizona.sista.odin._
 import edu.arizona.sista.reach.RuleReader
 import edu.arizona.sista.reach.mentions.BioRelationMention
 import edu.arizona.sista.reach.mentions._
 
 
-trait AssemblySieve {
+trait AssemblySieve extends StrictLogging {
 
   // the label to be used by RelationMentions constructed during assembly
   val label = "Assembly"
@@ -62,6 +63,7 @@ trait AssemblySieve {
 class ExactIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
+    logger.debug(s"Beginning ${this.name} assembly...")
     // find pairs that satisfy strict IO conditions
     // input of m1 must be output of m2 OR input of m2 must be output m1
     val links:Seq[BioRelationMention] =
@@ -127,6 +129,7 @@ class ExactIOSieve extends AssemblySieve {
 class ApproximateIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
+    logger.debug(s"Beginning ${this.name} assembly...")
     // find pairs that satisfy approximate IO conditions
     // input of m1 must be approximate output of m2 OR input of m2 must be approximate output m1
     // see IO.fuzzyMatch for details on meaning of "approximate"
@@ -188,7 +191,7 @@ class ApproximateIOSieve extends AssemblySieve {
 class PrepositionLinkSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
-
+    logger.debug(s"Beginning ${this.name} assembly...")
     // read rules and initialize state with existing mentions
     val p = "/edu/arizona/sista/assembly/grammar/assembly.yml"
     val assembledMentions = assemblyViaRules(p, mentions)
