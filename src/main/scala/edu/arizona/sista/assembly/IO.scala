@@ -177,7 +177,7 @@ object IOResolver {
       IOSet(IO(id, mods, text))
 
     // get output of all themes
-    case binding: BioMention if binding matches "Binding" =>
+    case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
       val input:Seq[IO] =
         for {
           theme:Mention <- binding.arguments(THEME)
