@@ -170,8 +170,9 @@ object IOResolver {
     // Use the grounding ID of the TextBoundMention
     // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
-      val id = btm.xref.get.printString
+      val xref = btm.xref
       val text = btm.text
+      val id = if (xref.nonEmpty) xref.get.printString else s"UNKNOWN-$text"
       val mods = getRelevantModifications(btm)
       IOSet(IO(id, mods, text))
 
