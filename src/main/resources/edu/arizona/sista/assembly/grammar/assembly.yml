@@ -11,9 +11,9 @@ vars:
   # < operator should be outside of regex
   incomingbeforetimeprep: "</^prep_(before|prior_to)$/"
   incomingaftertimeprep: "</^prep_(after|following)$/"
-  incomingtype: "Event"
+  incomingtype: "PossibleController"
   # "after" should be some kind of Event that transforms "before"
-  outgoingtype: "Event"
+  outgoingtype: "PossibleController"
   beforesurface: "[lemma=/^(before|prior|precede)$/]"
   aftersurface: "[lemma=/^follow|after$/]"
 
@@ -70,6 +70,39 @@ rules:
       after:${incomingtype}
       before:${outgoingtype} = <nsubj [lemma=/^(precipitate|cause|follow)$/] dobj
 
+  - name: assembly-verb-syntax-4
+    example: "A ubiquitination is a result of B phosphorylation."
+    label: ${mylabel}
+    priority: ${deprulepriority}
+    pattern: |
+     before:${incomingtype}
+     after:${outgoingtype} = </prepc?_of/ [lemma=result] nsubj
+
+  - name: assembly-verb-syntax-5
+    example: "A is ubiquitinated, resulting in the phosphorylation of B."
+    label: ${mylabel}
+    priority: ${deprulepriority}
+    pattern: |
+     after:${incomingtype}
+     before:${outgoingtype} = <prep_in [lemma=result & tag=VBG] >vmod
+
+  - name: assembly-verb-syntax-6
+    example: "As a result of A phosphorylation, B is ubiquitinated. A is phosphorylated as a result of B ubiqutination."
+    label: ${mylabel}
+    priority: ${deprulepriority}
+    pattern: |
+     after:${incomingtype}
+     before:${outgoingtype} = prep_as [lemma=result] /prepc?_of/
+
+  - name: assembly-verb-syntax-7
+    example: "A phosphorylation results in B ubiqutination."
+    label: ${mylabel}
+    priority: ${deprulepriority}
+    pattern: |
+     before:${outgoingtype}
+     after:${incomingtype} = <nsubj [lemma=result] prep_in
+
+  # Passives
   - name: assembly-syntax-pass-1
     label: DirectConnection
     priority: ${deprulepriority}
@@ -85,6 +118,10 @@ rules:
     pattern: |
       after:${incomingtype}
       before:${outgoingtype} = <nsubjpass [lemma=/^(precede)$/] agent
+
+  ############################
+  # Surface rules
+  ############################
 
   # finds a direct connection
   - name: assembly-surface-1
@@ -128,3 +165,27 @@ rules:
     pattern: |
      # NOTE: event "A has no effect on B" implies A before B
      @before:${incomingtype} [lemma=have] []{,2} [lemma=effect] on []{,2} @after:${outgoingtype}
+
+  - name: assembly-surface-5
+    example: "A ubiquitination is a result of B phosphorylation."
+    label: ${mylabel}
+    type: token
+    priority: ${surfacerulepriority}
+    pattern: |
+     @after:${outgoingtype} [lemma=be] result of []{,2} @before:${incomingtype}
+
+  - name: assembly-surface-6
+    example: "A is ubiquitinated, resulting in the phosphorylation of B."
+    label: ${mylabel}
+    type: token
+    priority: ${surfacerulepriority}
+    pattern: |
+     @before:${incomingtype} []{,2} [lemma=result] in []{,2} @after:${outgoingtype}
+
+  - name: assembly-surface-7
+    example: "A is ubiquitinated, thereby increasing the phosphorylation of B."
+    label: ${mylabel}
+    type: token
+    priority: ${surfacerulepriority}
+    pattern: |
+     @before:${incomingtype} []{,2} [lemma=thereby] []{,3} @after:${outgoingtype}
