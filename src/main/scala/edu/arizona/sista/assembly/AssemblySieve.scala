@@ -17,34 +17,6 @@ trait AssemblySieve {
   // takes mentions and produces an AssemblyGraph
   def assemble(mentions:Seq[Mention]): AssemblyGraph
 
-  // constraints on assembled mentions to avoid redundancies
-  // only return assembled mentions
-  // where both "before" and "after" args are
-  // PossibleControllers (see reach/biogrammar/taxonomy.yml)
-  // (i.e. ignore mentions related to context, cell types, species, etc)
-  // an assembled mention should not join the same Entity
-  // (i.e. "before" & "after" should not both point to Entity e)
-  def constrainAssembled(ams: Seq[RelationMention]):Seq[RelationMention]= {
-    for {
-      am <- ams
-      before = am.arguments("before").head
-      after = am.arguments("after").head
-      outputsOfBefore = IOResolver.getOutputs(before)
-      inputsOfAfter = IOResolver.getInputs(after)
-      outputsOfAfter = IOResolver.getOutputs(after)
-      // only assemble things that involve PossibleControllers
-      // lhs and rhs ("after") should be Events
-      // entities don't transform input
-      if before matches "Event"
-      if after matches "Event"
-      // ensure output of "before" != output of "after"
-      if outputsOfBefore != outputsOfAfter
-      // input of "after" != output of "after"
-      // i.e. there should be a change of state in the IO
-      if inputsOfAfter != outputsOfAfter
-    } yield am
-  }
-
   def assemblyViaRules(rulesPath: String, reachOutput:Seq[Mention]):Seq[RelationMention] = {
     // read rules and initialize state with existing mentions
     val rules:String = RuleReader.readResource(rulesPath)
@@ -77,7 +49,9 @@ trait AssemblySieve {
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
-    AssemblyGraph(constrainAssembled(assemble(mentions).connected), this.name)
+    // Before and After must be PossibleControllers
+    // If either is an entity, it must have a PTM modification
+    AssemblyGraph(Constraints.imposeAssemblyConstraints(assemble(mentions).connected), this.name)
   }
 }
 
@@ -135,6 +109,15 @@ class ExactIOSieve extends AssemblySieve {
       }
     AssemblyGraph(links, this.name)
   }
+
+  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
+    // For IO sieves, "before" should be an Event
+    AssemblyGraph(Constraints.beforeMustBeEvent(
+      Constraints.imposeAssemblyConstraints(
+        assemble(mentions).connected
+      )
+    ), this.name)
+  }
 }
 
 /**
@@ -187,6 +170,15 @@ class ApproximateIOSieve extends AssemblySieve {
       }
     AssemblyGraph(links, this.name)
   }
+
+  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
+    // For IO sieves, "before" should be an Event
+    AssemblyGraph(Constraints.beforeMustBeEvent(
+      Constraints.imposeAssemblyConstraints(
+        assemble(mentions).connected
+      )
+    ), this.name)
+  }
 }
 
 /**
@@ -210,6 +202,58 @@ class InterSentenceLinguisticSieve extends AssemblySieve {
     val p = "/edu/arizona/sista/assembly/grammar/cross-sentence-assembly.yml"
     val assembledMentions = assemblyViaRules(p, mentions)
     AssemblyGraph(assembledMentions, this.name)
+  }
+}
+
+// A set of constraints used to validate the output of sieves
+object Constraints {
+
+  // test if PTM
+  def hasPTM(m: Mention): Boolean = m.toBioMention.modifications.exists(_.isInstanceOf[PTM])
+
+  // Restrict "before" to Event
+  // Used by IO Sieves
+  def beforeMustBeEvent(ams: Seq[RelationMention]):Seq[RelationMention] = {
+    for {
+      am <- ams
+      // size should be 1
+      before = am.arguments("before").head
+      if before matches "Event"
+    } yield am
+  }
+
+  // constraints on assembled mentions to avoid redundancies
+  // only return assembled mentions
+  // where both "before" and "after" args are
+  // PossibleControllers (see reach/biogrammar/taxonomy.yml)
+  // (i.e. ignore mentions related to context, cell types, species, etc)
+  // an assembled mention should not join the same Entity
+  // (i.e. "before" & "after" should not both point to Entity e)
+  def imposeAssemblyConstraints(ams: Seq[RelationMention]):Seq[RelationMention] = {
+    for {
+      am <- ams
+      // both should be of size 1
+      before = am.arguments("before").head
+      after = am.arguments("after").head
+      outputsOfBefore = IOResolver.getOutputs(before)
+      inputsOfAfter = IOResolver.getInputs(after)
+      outputsOfAfter = IOResolver.getOutputs(after)
+      // only assemble things that involve PossibleControllers
+      // lhs and rhs ("after") should be Events
+      // entities don't transform input
+      if before matches "PossibleController"
+      // NOTE: some unresolved coref mentions linger in the reach output
+      // ex (PMC3847091):  ... that this phosphorylation leads to its increased translocation to the cytosol and nucleus and increased binding to p53 (PMC3847091)
+      if ! ( before matches "Generic_event")  && ! (after matches "Generic_event")
+      // before and after can only be entities iff they have a PTM modification
+      if (before matches "Event") || Constraints.hasPTM(before)
+      if (after matches "Event") || Constraints.hasPTM(after)
+      // ensure output of "before" != output of "after"
+      if outputsOfBefore != outputsOfAfter
+      // input of "after" != output of "after"
+      // i.e. there should be a change of state in the IO
+      if inputsOfAfter != outputsOfAfter
+    } yield am
   }
 }
 
