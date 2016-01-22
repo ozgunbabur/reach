@@ -143,12 +143,18 @@ object IOResolver extends StrictLogging {
   }
 
   def getGroundingIDasString(m: Mention): String = {
-
+    logger.debug(s"\t\tattempting to ground ${m.label} (${m.text})")
+    val unknown = s"UNKNOWN-${m.text.toLowerCase}"
     m.toBioMention match {
-      case tb : BioTextBoundMention => if (tb.isGrounded) tb.xref.get.printString else s"UNKNOWN-${tb.text.toLowerCase}"
-      // recursively unpack this guy
+      // Some remnants of coref linger...
+      case corefOrphan if corefOrphan matches "Generic_event" => unknown
+      // An entity should be easy to ground...
+      case tb : BioTextBoundMention => if (tb.isGrounded) tb.xref.get.printString else unknown
+      // Recursively unpack this guy
       // TODO: figure out a better way to do this than .head
       case hasPatient if findPatients(m).nonEmpty => getGroundingIDasString(findPatients(m).head)
+      // Cannot be determined...
+      case _ => unknown
     }
   }
 
