@@ -5,6 +5,7 @@ import edu.arizona.sista.odin._
 import edu.arizona.sista.reach.RuleReader
 import edu.arizona.sista.reach.mentions.BioRelationMention
 import edu.arizona.sista.reach.mentions._
+import scala.collection.mutable
 
 
 trait AssemblySieve extends StrictLogging {
@@ -211,6 +212,40 @@ class InterSentenceLinguisticSieve extends AssemblySieve {
 // A set of constraints used to validate the output of sieves
 object Constraints {
 
+  // roles for assembly links
+  val beforeRole = "before"
+  val afterRole = "after"
+
+  // Determines valid candidates for rule-based assembly
+  def filterAssemblyCandidates(reachOutput:Seq[Mention]):Seq[Mention] = reachOutput.filter(_ matches "PossibleController")
+
+  // Builds a parent LUT to be used for filtering mentions
+  def mkParentsMap(mentions:Seq[Mention]):Map[Mention, Set[Mention]] = {
+
+    val parents = mutable.Map[Mention, mutable.Set[Mention]]().withDefaultValue(mutable.Set.empty)
+    for {
+      m <- mentions
+      // for each key
+      role <- m.arguments.keys
+      // for each value
+      arg <- m.arguments(role)
+    } {
+      // arg points to its parents
+      parents(arg) += m
+    }
+    // cast in stone
+    parents.mapValues(_.toSet).toMap
+  }
+
+  // Check if mention is valid
+  // "before" and "after" should not share the same parent
+  def isValidLink(parents:Map[Mention, Set[Mention]], link:Mention):Boolean = {
+    val before:Mention = link.arguments(Constraints.beforeRole).head
+    val after:Mention = link.arguments(Constraints.afterRole).head
+    // arg parentage should not intersect
+    parents(before).intersect(parents(after)).isEmpty
+  }
+
   // test if PTM
   def hasPTM(m: Mention): Boolean = m.toBioMention.modifications.exists(_.isInstanceOf[PTM])
 
@@ -220,7 +255,7 @@ object Constraints {
     for {
       am <- ams
       // size should be 1
-      before = am.arguments("before").head
+      before = am.arguments(beforeRole).head
       if before matches "Event"
     } yield am
   }
@@ -236,8 +271,8 @@ object Constraints {
     for {
       am <- ams
       // both should be of size 1
-      before = am.arguments("before").head
-      after = am.arguments("after").head
+      before = am.arguments(beforeRole).head
+      after = am.arguments(afterRole).head
       outputsOfBefore = IOResolver.getOutputs(before)
       inputsOfAfter = IOResolver.getInputs(after)
       outputsOfAfter = IOResolver.getOutputs(after)
