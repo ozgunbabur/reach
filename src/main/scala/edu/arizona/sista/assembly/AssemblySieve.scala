@@ -16,44 +16,78 @@ trait AssemblySieve extends StrictLogging {
   // the name of the sieve
   def name = this.getClass.getSimpleName
 
-  // takes mentions and produces an AssemblyGraph
+  // Takes mentions and produces an AssemblyGraph
   def assemble(mentions:Seq[Mention]): AssemblyGraph
 
+  // Applies a set of assembly rules using a state comprised of only
+  // those mentions relevant for the task (see filterAssemblyCandidates)
+  //
+  // Care is taken to apply the rules to each set of mentions from the same Doc.
   def assemblyViaRules(rulesPath: String, reachOutput:Seq[Mention]):Seq[RelationMention] = {
+
     // read rules and initialize state with existing mentions
     val rules:String = RuleReader.readResource(rulesPath)
     val ee = ExtractorEngine(rules)
     // a subset of the mentions found by REACH, filtered for assembly
-    val validMentions = reachOutput.filter(_ matches "PossibleController")
+    val validMentions = Constraints.filterAssemblyCandidates(reachOutput)
     // since we break a paper into sections, we'll need to group the mentions by doc
     // rule set only produces target RelationMentions
 
-    val assembledMentions =
+    val assembledMentions:Iterable[RelationMention] =
       for {
         (doc, mentionsFromReach) <- validMentions.groupBy(_.document)
         // create a new state with just the mentions from a particular doc
         // note that a doc is as granular as a section of a paper
         oldState = State(mentionsFromReach)
+        // get parents of each
+        parents = Constraints.mkParentsMap(mentionsFromReach)
         // extract the assembly mentions from the subset of reach mentions
         // belonging to the same doc.
         // NOTE: Odin expects all mentions in the state to belong to the same doc!
         m <- ee.extractFrom(doc, oldState)
-        // TODO: this may not be necessary
-        // ensure that mention is one related to Assembly
-        if m matches this.label
       } yield m.asInstanceOf[RelationMention]
-
-    assembledMentions.filter( _ matches "Assembly" )
-      .map( _.toBioMention)
-      .map( _.asInstanceOf[BioRelationMention] )
 
     assembledMentions.toSeq
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
-    // Before and After must be PossibleControllers
-    // If either is an entity, it must have a PTM modification
-    AssemblyGraph(Constraints.imposeAssemblyConstraints(assemble(mentions).connected), this.name)
+    val links =
+      // Before and After must be PossibleControllers
+      // If either is an entity, it must have a PTM modification
+      Constraints.imposeAssemblyConstraints(
+        assemble(mentions).connected
+      )
+
+    // create the map of m -> parents for the filtering of results
+    val parents = Constraints.mkParentsMap(mentions)
+    // ensure we're not "re-assembling" existing regulations
+    // I don't think we should bother filtering these out,
+    // but some might say that not doing so inflates the contribution of the sieve...
+    val validLinks = links.filter(link => Constraints.isValidLink(parents, link))
+
+    AssemblyGraph(validLinks, this.name)
+  }
+
+  // Filtering for IO-based sieves
+  def assembleAndIOFilter(mentions:Seq[Mention]):AssemblyGraph = {
+    val links =
+    // For IO sieves, "before" should be an Event
+      Constraints.beforeMustBeEvent(
+        // general constraints on assembly "links"
+        Constraints.imposeAssemblyConstraints(
+          // apply sieve's assembly
+          assemble(mentions).connected
+        )
+      )
+
+    // create the map of m -> parents for the filtering of results
+    val parents = Constraints.mkParentsMap(mentions)
+    // ensure we're not "re-assembling" existing regulations
+    // I don't think we should bother filtering these out,
+    // but some might say that not doing so inflates the contribution of the sieve...
+    val validLinks = links.filter(link => Constraints.isValidLink(parents, link))
+
+    AssemblyGraph(validLinks, this.name)
   }
 }
 
@@ -65,6 +99,7 @@ class ExactIOSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
     logger.debug(s"Beginning ${this.name} assembly...")
+
     // find pairs that satisfy strict IO conditions
     // input of m1 must be output of m2 OR input of m2 must be output m1
     val links:Seq[BioRelationMention] =
@@ -81,8 +116,6 @@ class ExactIOSieve extends AssemblySieve {
         // get output representation for m2
         m2outputs = IOResolver.getOutputs(m2)
         // don't link if these mentions are the same
-        // TODO: strict mention equality isn't inclusive enough for this check
-        // Look at representation of mentions?
         if m1 != m2
         // only yield if the strict IO constraint holds
         // all outputs of one of the mentions must be contained by the inputs of the other mention
@@ -113,14 +146,7 @@ class ExactIOSieve extends AssemblySieve {
     AssemblyGraph(links, this.name)
   }
 
-  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
-    // For IO sieves, "before" should be an Event
-    AssemblyGraph(Constraints.beforeMustBeEvent(
-      Constraints.imposeAssemblyConstraints(
-        assemble(mentions).connected
-      )
-    ), this.name)
-  }
+  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = assembleAndIOFilter(mentions)
 }
 
 /**
@@ -147,6 +173,8 @@ class ApproximateIOSieve extends AssemblySieve {
         m2inputs = IOResolver.getInputs(m2)
         // get output representation for m2
         m2outputs = IOResolver.getOutputs(m2)
+        // don't link if these mentions are the same
+        if m1 != m2
         // only yield if the approximate IO constraint holds
         if m1outputs.isFuzzySubsetOf(m2inputs) || m2outputs.isFuzzySubsetOf(m1inputs)
       } yield {
@@ -175,14 +203,7 @@ class ApproximateIOSieve extends AssemblySieve {
     AssemblyGraph(links, this.name)
   }
 
-  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
-    // For IO sieves, "before" should be an Event
-    AssemblyGraph(Constraints.beforeMustBeEvent(
-      Constraints.imposeAssemblyConstraints(
-        assemble(mentions).connected
-      )
-    ), this.name)
-  }
+  override def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = assembleAndIOFilter(mentions)
 }
 
 /**
@@ -204,7 +225,7 @@ class InterSentenceLinguisticSieve extends AssemblySieve {
 
   def assemble(mentions:Seq[Mention]): AssemblyGraph = {
     val p = "/edu/arizona/sista/assembly/grammar/cross-sentence-assembly.yml"
-    val assembledMentions = assemblyViaRules(p, mentions)
+    val assembledMentions:Seq[RelationMention] = assemblyViaRules(p, mentions)
     AssemblyGraph(assembledMentions, this.name)
   }
 }
