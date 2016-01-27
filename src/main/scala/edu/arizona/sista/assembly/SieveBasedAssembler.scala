@@ -33,15 +33,17 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) extends StrictLogging {
     // The assumption is the shortest string reps should be the easiest to identify as canonical cases of the link
     def chooseShortest(ams: Seq[RelationMention]):RelationMention = {
       ams.minBy(am => {
-        val before = am.arguments("before").head
-        val after = am.arguments("after").head
+        val before = am.arguments(Constraints.beforeRole).head
+        val after = am.arguments(Constraints.afterRole).head
 
         (before.text.length, after.text.length)
       })
     }
    am
-     .groupBy(m => (simplifyIOforGrouping(IOResolver.getOutputs(m.arguments("before").head)), simplifyIOforGrouping(IOResolver.getOutputs(m.arguments("after").head)) ))
+     // group by tuple of simplified outputs
+     .groupBy(m => (simplifyIOforGrouping(IOResolver.getOutputs(m.arguments(Constraints.beforeRole).head)), simplifyIOforGrouping(IOResolver.getOutputs(m.arguments(Constraints.afterRole).head)) ))
      .values
+     // choose a representative mention for each distinct link and get the total number of mentions found for that link type
      .map(v => (chooseShortest(v), v.size))
      .toSeq
   }
@@ -50,8 +52,8 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) extends StrictLogging {
   def displayAssembledMention(m: Mention, seen: Int):Unit = println(generateAssembledMentionRepresentation(m, evidence = seen))
 
   def generateAssembledMentionRepresentation(m: Mention, evidence:Int = 0):String = {
-    val before = m.arguments("before").head
-    val after = m.arguments("after").head
+    val before = m.arguments(Constraints.beforeRole).head
+    val after = m.arguments(Constraints.afterRole).head
     val text =
       if ((before.document != after.document) || (before.sentence != after.sentence))
         // TODO: Add sentence window to L & R of before and after
@@ -115,8 +117,8 @@ class SieveBasedAssembler(sieves: Seq[AssemblySieve]) extends StrictLogging {
     val lines =
       for {
         (am, evidence) <- ams
-        before = am.arguments("before").head
-        after = am.arguments("after").head
+        before = am.arguments(Constraints.beforeRole).head
+        after = am.arguments(Constraints.afterRole).head
         // TODO: Add sentence window to L & R of before and after
         text = if ((before.document != after.document) || (before.sentence != after.sentence)) s"${before.text} ... ${after.text}" else am.text
     } yield Seq(
