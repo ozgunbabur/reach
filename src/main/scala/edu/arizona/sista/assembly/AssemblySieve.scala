@@ -265,7 +265,7 @@ object Constraints {
       parents(arg) += m
     }
     // frozen in stone for a thousand years...
-    parents.toMap//.withDefaultValue(Set.empty[Mention])
+    parents.toMap.withDefaultValue(Set.empty[Mention])
   }
 
   // "before" and "after" should not share a parent
