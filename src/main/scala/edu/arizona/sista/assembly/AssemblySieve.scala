@@ -63,7 +63,9 @@ trait AssemblySieve extends StrictLogging {
     // ensure we're not "re-assembling" existing regulations
     // I don't think we should bother filtering these out,
     // but some might say that not doing so inflates the contribution of the sieve...
-    val validLinks = links.filter(link => Constraints.isValidLink(parents, link))
+    val validLinks = links.filter(link =>
+      Constraints.differentParentMentions(parents, link) && Constraints.notAnExistingComplexEvent(link)
+    )
 
     AssemblyGraph(validLinks, this.name)
   }
@@ -85,7 +87,9 @@ trait AssemblySieve extends StrictLogging {
     // ensure we're not "re-assembling" existing regulations
     // I don't think we should bother filtering these out,
     // but some might say that not doing so inflates the contribution of the sieve...
-    val validLinks = links.filter(link => Constraints.isValidLink(parents, link))
+    val validLinks = links.filter(link =>
+      Constraints.differentParentMentions(parents, link) && Constraints.notAnExistingComplexEvent(link)
+    )
 
     AssemblyGraph(validLinks, this.name)
   }
@@ -258,13 +262,22 @@ object Constraints {
     parents.mapValues(_.toSet).toMap
   }
 
-  // Check if mention is valid
-  // "before" and "after" should not share the same parent
-  def isValidLink(parents:Map[Mention, Set[Mention]], link:Mention):Boolean = {
+  // "before" and "after" should not share a parent
+  def differentParentMentions(parents:Map[Mention, Set[Mention]], link:Mention):Boolean = {
     val before:Mention = link.arguments(Constraints.beforeRole).head
     val after:Mention = link.arguments(Constraints.afterRole).head
     // arg parentage should not intersect
     parents(before).intersect(parents(after)).isEmpty
+  }
+
+  // For a complex event "C", with a controlled "A", do not re-create "A precedes C"
+  def notAnExistingComplexEvent(link: Mention):Boolean = {
+    val before = link.arguments(beforeRole).head
+    val after = link.arguments(afterRole).head
+    val argsOfBeforeMention:Set[Mention] = before.arguments.values.flatten.toSet
+    val argsOfAfterMention:Set[Mention] = after.arguments.values.flatten.toSet
+
+    !(argsOfBeforeMention contains after) && !(argsOfAfterMention contains before)
   }
 
   // test if PTM
