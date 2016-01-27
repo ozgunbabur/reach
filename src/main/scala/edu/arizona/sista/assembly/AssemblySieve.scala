@@ -45,6 +45,9 @@ trait AssemblySieve extends StrictLogging {
         // belonging to the same doc.
         // NOTE: Odin expects all mentions in the state to belong to the same doc!
         m <- ee.extractFrom(doc, oldState)
+        // ensure that mention is one related to Assembly
+        // we don't want to return things from the old state
+        if m matches this.label
       } yield m.asInstanceOf[RelationMention]
 
     assembledMentions.toSeq
