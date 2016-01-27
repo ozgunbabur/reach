@@ -258,8 +258,8 @@ object Constraints {
       // arg points to its parents
       parents(arg) += m
     }
-    // cast in stone
-    parents.mapValues(_.toSet).toMap
+    // frozen in stone for a thousand years...
+    parents.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
   }
 
   // "before" and "after" should not share a parent
