@@ -253,7 +253,7 @@ object Constraints {
   // Builds a parent LUT to be used for filtering mentions
   def mkParentsMap(mentions:Seq[Mention]):Map[Mention, Set[Mention]] = {
 
-    val parents = mutable.Map[Mention, mutable.Set[Mention]]().withDefaultValue(mutable.Set.empty)
+    val parents = mutable.Map[Mention, Set[Mention]]().withDefaultValue(Set.empty[Mention])
     for {
       m <- mentions
       // for each key
@@ -265,7 +265,7 @@ object Constraints {
       parents(arg) += m
     }
     // frozen in stone for a thousand years...
-    parents.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
+    parents.toMap//.withDefaultValue(Set.empty[Mention])
   }
 
   // "before" and "after" should not share a parent
