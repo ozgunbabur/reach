@@ -50,7 +50,10 @@ trait AssemblySieve extends StrictLogging {
         if m matches this.label
       } yield m.asInstanceOf[RelationMention]
 
-    assembledMentions.toSeq
+    assembledMentions
+      // precede rule name by sieve name
+      .map( m => m.copy(foundBy = s"$name.${m.foundBy}"))
+      .toSeq
   }
 
   def assembleAndFilter(mentions:Seq[Mention]):AssemblyGraph = {
