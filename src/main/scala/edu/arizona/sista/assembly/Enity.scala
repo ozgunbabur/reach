@@ -7,17 +7,18 @@ import edu.arizona.sista.reach.mentions._
 import scala.collection.SetLike
 
 
-case class IO(id: String, mods: Set[String], text: String) {
+
+case class Entity(id: String, features: Set[String], text: String) {
 
   // Customized equality
   override def equals(o: Any) = o match {
     // Check that the ID and mods are the same
     // Could be input or output
-    case that: IO => that.id.equalsIgnoreCase(this.id) && that.mods.equals(this.mods)
+    case that: Entity => that.id.equalsIgnoreCase(this.id) && that.features.equals(this.features)
     case _ => false
   }
   // Fuzzy match over IO, checking Grounding-based id OR text
-  def fuzzyMatch(that:IO): Boolean = this.id.equalsIgnoreCase(that.id) || this.text.equalsIgnoreCase(that.text)
+  def fuzzyMatch(that:Entity): Boolean = this.id.equalsIgnoreCase(that.id) || this.text.equalsIgnoreCase(that.text)
   // Check to see if this IO is the Input of some Mention
   // Uses custom equality def (text doesn't need to match)
   def isInputOf(m: Mention): Boolean = IOResolver.getInputs(m).forall(i => this.equals(i))
@@ -27,11 +28,15 @@ case class IO(id: String, mods: Set[String], text: String) {
   def isOutputOf(m: Mention): Boolean = IOResolver.getOutputs(m).forall(o => this.equals(o))
   def isContainedByOutputOf(m: Mention): Boolean = IOResolver.getOutputs(m).exists(_.equals(this))
   // Check to see if this IO is the Output of some Mention
-  // ignores differences in the mods
+  // ignores differences in the features
   def isFuzzyOutputOf(m: Mention): Boolean = IOResolver.getOutputs(m).exists(o => this.fuzzyMatch(o))
   // Check to see if this IO is the Output of some Mention
-  // ignores differences in the mods
+  // ignores differences in the features
   def isFuzzyInputOf(m: Mention): Boolean = IOResolver.getInputs(m).exists(i => this.fuzzyMatch(i))
+}
+
+case class Event(participants:Map[String, IOSet], input:IOSet, output:IOSet, label:String, var evidence:Seq[Mention]) {
+
 }
 
 // Because an Event's input can involve more than Entity,
@@ -42,18 +47,18 @@ case class IO(id: String, mods: Set[String], text: String) {
 // a decision was made to represent outputs as a set of outputs as well.
 // I have switched back to using a single type (IO) to represent both inputs and outputs.
 // So far this has not been a problem.
-class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializable {
+class IOSet(m: Set[Entity]) extends Set[Entity] with SetLike[Entity, IOSet] with Serializable {
 
   private val members = m.toSet
-  override def empty:IOSet = new IOSet(Set.empty[IO])
-  def + (elem: IO):IOSet = new IOSet(members ++ Set(elem))
+  override def empty:IOSet = new IOSet(Set.empty[Entity])
+  def + (elem: Entity):IOSet = new IOSet(members ++ Set(elem))
   def ++ (elem: IOSet):IOSet = new IOSet(members ++ elem)
-  def - (elem: IO):IOSet = new IOSet(members.filterNot(_.equals(elem)))
+  def - (elem: Entity):IOSet = new IOSet(members.filterNot(_.equals(elem)))
   def -- (elem: IOSet):IOSet = new IOSet(members -- elem)
-  def contains(elem: IO):Boolean = members.exists(_.equals(elem))
-  def fuzzyContains(elem: IO) = members.exists(_.fuzzyMatch(elem))
+  def contains(elem: Entity):Boolean = members.exists(_.equals(elem))
+  def fuzzyContains(elem: Entity) = members.exists(_.fuzzyMatch(elem))
 
-  def iterator:Iterator[IO] = members.iterator
+  def iterator:Iterator[Entity] = members.iterator
 
   def intersection(that:IOSet):IOSet = {
     IOSet(members.filter(m => that contains m))
@@ -68,7 +73,7 @@ class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializabl
   // Customized equality
   override def equals(o: Any) = o match {
     // for convenience, implicitly convert a naked IO to an IOSet for comparison
-    case that: IO => this == IOSet(that)
+    case that: Entity => this == IOSet(that)
     // sets must be the same size
     case anotherSet: IOSet => (anotherSet.size == this.size) && this.isSubsetOf(anotherSet)
     case _ => false
@@ -76,19 +81,19 @@ class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializabl
 
   // All members of A in B
   def isSubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.equals(m)))
-  def isSubsetOf(that: IO):Boolean = this isSubsetOf IOSet(that)
+  def isSubsetOf(that: Entity):Boolean = this isSubsetOf IOSet(that)
 
   // All members of A in B, but B is larger
   def isProperSubsetOf(that: IOSet):Boolean = this.size < that.size && this.isSubsetOf(that)
-  def isProperSubsetOf(that: IO):Boolean = this isProperSubsetOf IOSet(that)
+  def isProperSubsetOf(that: Entity):Boolean = this isProperSubsetOf IOSet(that)
 
   // All members of A have fuzzyMatch membership in B
   def isFuzzySubsetOf(that: IOSet):Boolean = members.forall(m => that.exists(_.fuzzyMatch(m)))
-  def isFuzzySubsetOf(that: IO):Boolean = this isFuzzySubsetOf IOSet(that)
+  def isFuzzySubsetOf(that: Entity):Boolean = this isFuzzySubsetOf IOSet(that)
 
   // All members of A have fuzzyMatch membership in B, but B is larger
   def isProperFuzzySubsetOf(that: IOSet):Boolean = this.size < that.size && this.isFuzzySubsetOf(that)
-  def isProperFuzzySubsetOf(that: IO):Boolean = this isProperFuzzySubsetOf IOSet(that)
+  def isProperFuzzySubsetOf(that: Entity):Boolean = this isProperFuzzySubsetOf IOSet(that)
 
   // NOTE: complete means that A & B are the same size AND all IO instances of A are in input of B
   def isCompleteInputOf(m: Mention):Boolean = this == IOResolver.getInputs(m)
@@ -116,9 +121,9 @@ class IOSet(m: Set[IO]) extends Set[IO] with SetLike[IO, IOSet] with Serializabl
 }
 
 object IOSet {
-  def empty = new IOSet(Set.empty[IO])
-  def apply(io: IO):IOSet = new IOSet(Set(io))
-  def apply(io: Iterable[IO]):IOSet = new IOSet(io.toSet)
+  def empty = new IOSet(Set.empty[Entity])
+  def apply(io: Entity):IOSet = new IOSet(Set(io))
+  def apply(io: Iterable[Entity]):IOSet = new IOSet(io.toSet)
   def apply(): IOSet = empty
 }
 
@@ -159,7 +164,7 @@ object IOResolver extends StrictLogging {
   }
 
   // Get labels for PTM and Mutant mods
-  def getRelevantModifications(m: Mention): Set[String] = {
+  def getRelevantFeatures(m: Mention): Set[String] = {
     val mods = m.toBioMention.modifications.flatMap {
       case ptm: PTM => Set(ptm.label)
       case mutant: Mutant => Set(mutant.label)
@@ -179,20 +184,20 @@ object IOResolver extends StrictLogging {
       //logger.debug(s"getting inputs for TB...")
       val id = getGroundingIDasString(btm)
       val text = btm.text
-      val mods = getRelevantModifications(btm)
+      val features = getRelevantFeatures(btm)
       //logger.debug(s"successfully constructed inputs for TB!")
-      IOSet(IO(id, mods, text))
+      IOSet(Entity(id, features, text))
 
     // get output of all themes
     case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
       //logger.debug(s"getting inputs for Binding...")
-      val input:Seq[IO] =
+      val input:Seq[Entity] =
         for {
           theme:Mention <- binding.arguments(THEME)
           id = getGroundingIDasString(theme)
           text = theme.text
-          mods:Set[String] = getRelevantModifications(theme)
-        } yield IO(id, mods, text)
+          features:Set[String] = getRelevantFeatures(theme)
+        } yield Entity(id, features, text)
       //logger.debug(s"successfully constructed inputs for Binding!")
       IOSet(input)
 
@@ -200,14 +205,14 @@ object IOResolver extends StrictLogging {
     case bemWithTheme: BioMention if bemWithTheme.matches("SimpleEvent") && bemWithTheme.arguments.contains(THEME) =>
       // get output of each theme
       //logger.debug(s"getting inputs for SimpleEvent...")
-      val input:Seq[IO] =
+      val input:Seq[Entity] =
         for {
           theme:Mention <- bemWithTheme.arguments(THEME)
           id = getGroundingIDasString(theme)
           text = theme.text
           // Get relevant modifications of theme (including its label)
-          mods = getRelevantModifications(theme)
-        } yield IO(id, mods, text)
+          features = getRelevantFeatures(theme)
+        } yield Entity(id, features, text)
       //logger.debug(s"successfully constructed inputs for SimpleEvent!")
       IOSet(input)
 
@@ -215,8 +220,8 @@ object IOResolver extends StrictLogging {
     case reg: BioMention if reg.matches("ComplexEvent") && reg.arguments.contains(CONTROLLER) && reg.arguments.contains(CONTROLLED) =>
       // attempt to find the Agent and its Inputs
       //logger.debug(s"getting inputs for reg...")
-      val inputsOfAgents:Seq[IO] = findAgents(reg).flatMap(getInputs)
-      val inputsOfPatients:Seq[IO] = findPatients(reg).flatMap(getInputs)
+      val inputsOfAgents:Seq[Entity] = findAgents(reg).flatMap(getInputs)
+      val inputsOfPatients:Seq[Entity] = findPatients(reg).flatMap(getInputs)
       //logger.debug(s"successfully constructed inputs for reg!")
       IOSet(inputsOfAgents ++ inputsOfPatients)
 
@@ -238,7 +243,7 @@ object IOResolver extends StrictLogging {
     // TODO: should this only apply if btm.matches("Entity")?
     case btm: BioTextBoundMention =>
       //logger.debug(s"getting outputs for TB...")
-      val outputs = for (i <- getInputs(mention)) yield IO(i.id, i.mods, i.text)
+      val outputs = for (i <- getInputs(mention)) yield Entity(i.id, i.mods, i.text)
       //logger.debug(s"successfully constructed inputs for TB!")
       IOSet(outputs)
 
@@ -247,15 +252,15 @@ object IOResolver extends StrictLogging {
     // get output of all themes
     case binding: BioMention if binding.matches("Binding") && binding.arguments.contains(THEME) =>
       //logger.debug(s"getting outputs for Binding...")
-      val output:Seq[IO] =
+      val output:Seq[Entity] =
         for {
           // process each binding participant
           theme:Mention <- binding.arguments(THEME)
           id = getGroundingIDasString(theme)
           text = theme.text
           // include binding label
-          mods:Set[String] = getRelevantModifications(theme) ++ Set(binding.label)
-        } yield IO(id, mods, text)
+          features:Set[String] = getRelevantFeatures(theme) ++ Set(binding.label)
+        } yield Entity(id, features, text)
       //logger.debug(s"successfully constructed inputs for Binding!")
       IOSet(output)
 
@@ -264,8 +269,8 @@ object IOResolver extends StrictLogging {
       //logger.debug(s"getting outputs for SimpleEvent...")
       // get input of each theme
       val input = getInputs(bemWithTheme)
-      // add the event's label (PTM) to the set of mods for each input
-      val output = input.map(i => IO(i.id, i.mods ++ Set(bemWithTheme.label), i.text))
+      // add the event's label (PTM) to the set of features for each input
+      val output = input.map(i => Entity(i.id, i.features ++ Set(bemWithTheme.label), i.text))
       //logger.debug(s"successfully constructed inputs for SimpleEvent!")
       IOSet(output)
 
@@ -284,17 +289,17 @@ object IOResolver extends StrictLogging {
           patients = findPatients(controlled)
           //_ = logger.debug("\tFound patients")
           // get the mods of the base entity for each assumed patient
-          modsFromPatients = patients.flatMap(getRelevantModifications).toSet
+          featuresFromPatients = patients.flatMap(getRelevantFeatures).toSet
         } yield {
           // assemble the mods per reg output
-          val mods =
+          val features =
             // the mods of the theme (including its label)
-            getRelevantModifications(controlled) ++
+            getRelevantFeatures(controlled) ++
             // the mods of the theme of the theme
-            modsFromPatients
+            featuresFromPatients
           //val _ = logger.debug("\tFound relevantMods")
-        // a single output per controlled
-        IO(id, mods, text)
+          // a single output per controlled
+          Entity(id, features, text)
       }
       //logger.debug(s"successfully constructed inputs for ComplexEvent!")
       IOSet(output)
