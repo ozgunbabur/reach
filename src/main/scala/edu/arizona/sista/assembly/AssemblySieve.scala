@@ -261,8 +261,10 @@ object Constraints {
       // for each value
       arg <- m.arguments(role)
     } {
+      println(s"""Adding "${m.text}" with label "${m.label}" as parent of arg "${arg.text}" with label "${arg.label}"""")
       // arg points to its parents
       parents(arg) += m
+      println(s"arg now has ${parents(arg).size} parents")
     }
     // frozen in stone for a thousand years...
     parents.toMap.withDefaultValue(Set.empty[Mention])
