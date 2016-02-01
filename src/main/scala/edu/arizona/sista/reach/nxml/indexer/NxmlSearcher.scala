@@ -51,8 +51,12 @@ class NxmlSearcher(val indexDir:String) {
   }
 
   def saveNxml(resultDir:String, docs:Set[(Document, Float)], howManyToSave:Int = 0): Unit = {
-    // TODO: if howManyToSave > 0, stop saving NXMLs after that many
-    for(doc <- docs.toList.sortBy(- _._2)) {
+    val docSeq = if (howManyToSave > 0) {
+      docs.toSeq.sortBy(-_._2).take(howManyToSave)
+    } else {
+      docs.toSeq.sortBy(-_._2)
+    }
+    for(doc <- docSeq) {
       val id = doc._1.get("id")
       val nxml = doc._1.get("nxml")
       val os = new PrintWriter(new FileWriter(resultDir + File.separator + id + ".nxml"))
@@ -62,6 +66,7 @@ class NxmlSearcher(val indexDir:String) {
   }
 
   def saveDocs(resultDir:String, docIds:Set[(Int, Float)]): Unit = {
+    val sos = new PrintWriter(new FileWriter(resultDir + File.separator + "scores.tsv"))
     for(docId <- docIds) {
       val doc = searcher.doc(docId._1)
       val id = doc.get("id")
@@ -69,7 +74,9 @@ class NxmlSearcher(val indexDir:String) {
       val os = new PrintWriter(new FileWriter(resultDir + File.separator + id + ".nxml"))
       os.print(nxml)
       os.close()
+      sos.println(s"$id\t${docId._2}")
     }
+    sos.close()
   }
 
   def search(query:String, totalHits:Int = TOTAL_HITS):Set[(Int, Float)] = {
@@ -157,6 +164,13 @@ class NxmlSearcher(val indexDir:String) {
   /** Finds all NXML that contain at least one biochemical interaction */
   def useCase2(resultDir:String): Unit = {
     val eventDocs = search("phosphorylation phosphorylates ubiquitination ubiquitinates hydroxylation hydroxylates sumoylation sumoylates glycosylation glycosylates acetylation acetylates farnesylation farnesylates ribosylation ribosylates methylation methylates binding binds")
+    logger.debug(s"The result contains ${eventDocs.size} documents.")
+    saveDocs(resultDir, eventDocs)
+    logger.debug("Done.")
+  }
+
+  def useCase3(resultDir:String): Unit = {
+    val eventDocs = search("children AND ((TNFAlpha AND nutrition) OR (inflammation AND stunting) OR (kcal AND inflammation) OR (protein AND inflammation) OR (nutrition AND inflammation))")
     logger.debug(s"The result contains ${eventDocs.size} documents.")
     saveDocs(resultDir, eventDocs)
     logger.debug("Done.")
