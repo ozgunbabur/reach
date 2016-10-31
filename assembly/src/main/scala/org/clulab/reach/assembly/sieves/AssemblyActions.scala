@@ -10,56 +10,9 @@ import org.clulab.reach.taxonomy
 
 class AssemblyActions extends Actions with LazyLogging {
 
-  val BEFORE = SieveUtils.beforeRole
-  val AFTER = SieveUtils.afterRole
-  val PRECEDENCE = SieveUtils.precedenceMentionLabel
-  val precedenceMentionLabels = taxonomy.hypernymsFor(PRECEDENCE)
+  import AssemblyActions._
 
   def identityAction(mentions: Seq[Mention], state: State): Seq[Mention] = mentions
-
-  /** Create a precedence mention for a before and after pair */
-  private def mkPrecedenceMention(parent: Mention, before: Mention, after: Mention): Mention = before.sentence == after.sentence match {
-    case true =>
-      new CrossSentenceMention(
-        labels = precedenceMentionLabels,
-        anchor = before,
-        neighbor = after,
-        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
-        document = parent.document,
-        keep = parent.keep,
-        foundBy = parent.foundBy
-      )
-    case false =>
-      new RelationMention(
-        labels = precedenceMentionLabels,
-        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
-        sentence = parent.sentence,
-        document = parent.document,
-        keep = parent.keep,
-        foundBy = parent.foundBy
-      )
-  }
-
-  def showBeforeAfter(mention: Mention): String = {
-    val before = mention.arguments(SieveUtils.beforeRole).head
-    val after = mention.arguments(SieveUtils.afterRole).head
-    before.sentence == after.sentence match {
-      case true =>
-        s"""found-by:\t${mention.foundBy}
-            |s1:\t'${before.sentenceObj.getSentenceText}'
-            |before (${before.label}):\t"${before.text}"
-            |after  (${after.label}):\t"${after.text}"
-     """.stripMargin
-
-      case false =>
-        s"""found-by:\t${mention.foundBy}
-            |s1:\t'${before.sentenceObj.getSentenceText}'
-            |s2:\t'${after.sentenceObj.getSentenceText}'
-            |before (${before.label}):\t"${before.text}"
-            |after  (${after.label}):\t"${after.text}"
-     """.stripMargin
-    }
-  }
 
   def validatePrecedenceRelations(mentions: Seq[Mention], state: State): Seq[Mention] = {
 
@@ -76,7 +29,7 @@ class AssemblyActions extends Actions with LazyLogging {
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
 
     if (validCandidates.nonEmpty) {
-      logger.debug(s"validatePrecedenceRelations found ${validCandidates.size} matches\n ${validCandidates.map(showBeforeAfter).mkString("\n")}")
+      logger.debug(s"validatePrecedenceRelations found ${validCandidates.size} matches\n ${validCandidates.map(summarizeBeforeAfter).mkString("\n")}")
     }
     validCandidates.distinct
   }
@@ -103,7 +56,7 @@ class AssemblyActions extends Actions with LazyLogging {
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
 
     if (expanded.nonEmpty) {
-      logger.debug(s"expandArgs found ${expanded.size} candidates\n ${expanded.map(showBeforeAfter).mkString("\n")}")
+      logger.debug(s"expandArgs found ${expanded.size} candidates\n ${expanded.map(summarizeBeforeAfter).mkString("\n")}")
     }
 
     validatePrecedenceRelations(expanded, state)
@@ -132,4 +85,78 @@ class AssemblyActions extends Actions with LazyLogging {
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
   }
 
+}
+
+
+object AssemblyActions {
+
+  val BEFORE = SieveUtils.beforeRole
+  val AFTER = SieveUtils.afterRole
+  val PRECEDENCE = SieveUtils.precedenceMentionLabel
+  val precedenceMentionLabels = taxonomy.hypernymsFor(PRECEDENCE)
+
+  def summarizeBeforeAfter(mention: Mention): String = {
+    val before = mention.arguments(SieveUtils.beforeRole).head
+    val after = mention.arguments(SieveUtils.afterRole).head
+    before.sentence == after.sentence match {
+      case true =>
+        s"""found-by:\t${mention.foundBy}
+            |s1:\t'${before.sentenceObj.getSentenceText}'
+            |before (${before.label}):\t"${before.text}"
+            |after  (${after.label}):\t"${after.text}"
+     """.stripMargin
+
+      case false =>
+        s"""found-by:\t${mention.foundBy}
+            |s1:\t'${before.sentenceObj.getSentenceText}'
+            |s2:\t'${after.sentenceObj.getSentenceText}'
+            |before (${before.label}):\t"${before.text}"
+            |after  (${after.label}):\t"${after.text}"
+     """.stripMargin
+    }
+  }
+
+  /** Create a precedence mention for a before and after pair */
+  def mkPrecedenceMention(before: Mention, after: Mention, foundBy: String): Mention = before.sentence == after.sentence match {
+    case true =>
+      new CrossSentenceMention(
+        labels = precedenceMentionLabels,
+        anchor = before,
+        neighbor = after,
+        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
+        document = before.document,
+        keep = true,
+        foundBy
+      )
+    case false =>
+      new RelationMention(
+        labels = precedenceMentionLabels,
+        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
+        sentence = before.sentence,
+        document = before.document,
+        keep = true,
+        foundBy
+      )
+  }
+  def mkPrecedenceMention(parent: Mention, before: Mention, after: Mention): Mention = before.sentence == after.sentence match {
+    case true =>
+      new CrossSentenceMention(
+        labels = precedenceMentionLabels,
+        anchor = before,
+        neighbor = after,
+        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
+        document = parent.document,
+        keep = parent.keep,
+        foundBy = parent.foundBy
+      )
+    case false =>
+      new RelationMention(
+        labels = precedenceMentionLabels,
+        arguments = Map(BEFORE -> Seq(before), AFTER -> Seq(after)),
+        sentence = parent.sentence,
+        document = parent.document,
+        keep = parent.keep,
+        foundBy = parent.foundBy
+      )
+  }
 }
