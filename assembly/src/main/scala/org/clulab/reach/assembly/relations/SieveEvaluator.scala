@@ -4,8 +4,10 @@ import com.typesafe.config.ConfigFactory
 import org.clulab.reach.assembly.relations.corpus.{Corpus, CorpusReader, EventPair}
 import org.clulab.odin._
 import org.clulab.reach.assembly.{AssemblyManager, PrecedenceRelation}
-import org.clulab.reach.assembly.sieves.{AssemblySieve, DeduplicationSieves, PrecedenceSieves, SieveUtils}
+import org.clulab.reach.assembly.sieves._
 import SieveUtils._
+import org.apache.commons.io.FileUtils
+import java.io.File
 
 
 object SieveEvaluator {
@@ -87,26 +89,6 @@ object SieveEvaluator {
       .map(pr => (pr.before.sourceMention.get.label, pr.after.sourceMention.get.label, pr))
   }
 
-
-  def evaluateRBSieves(mentions: Seq[Mention], goldData: Seq[EventPair]): Seq[Performance] = {
-    // TODO: evaluate precedence labels
-
-    val dedup = new DeduplicationSieves()
-    val precedence = new PrecedenceSieves()
-
-    val orderedSieves =
-    // track relevant mentions
-      AssemblySieve(dedup.trackMentions) andThen
-//        // find precedence using TAM rules
-//        AssemblySieve(precedence.reichenbachPrecedence) andThen
-        AssemblySieve(precedence.discourseRBPrecedence)
-
-    val am: AssemblyManager = orderedSieves.apply(mentions)
-
-    ???
-  }
-
-
   /**
     * Applies each Assembly Sieve to mentions and returns and updated AssemblyManager for each.
     *
@@ -134,6 +116,33 @@ object SieveEvaluator {
   }
 
 
+  def summarizePrecedenceRelations(pr: Seq[PrecedenceRelation]): String = {
+    val crossSentenceCount = pr.count(pr => pr.before.sourceMention.get.sentence != pr.after.sourceMention.get.sentence)
+    val eventPairs = pr.map{ pr =>
+      val before = pr.before.sourceMention
+      val after = pr.after.sourceMention
+
+      (before, after) match {
+
+        case (Some(b), Some(a)) =>
+          val rm = AssemblyActions.mkPrecedenceMention(b, a, pr.evidence.toSeq.map(_.foundBy).mkString(", "))
+          AssemblyActions.summarizeBeforeAfter(rm)
+
+        case other =>
+          s"""NO EVIDENCE FOUND
+              |${pr.before.toString}
+              |${pr.after.toString}
+          """.stripMargin
+      }
+    }.mkString("\n")
+
+    s"""# CROSS-SENTENCE:\t$crossSentenceCount
+       |# INTRASENTENCE:\t${pr.size - crossSentenceCount}
+       |
+       |$eventPairs
+     """.stripMargin
+  }
+
   def evaluateSieves(posGold: Seq[PrecedenceRelation], results: Map[String, AssemblyManager]): Seq[Performance] = {
 
     println("sieve\trule\tp\tr\tf1\ttp\tfp\tfn")
@@ -143,17 +152,22 @@ object SieveEvaluator {
     } yield {
       val predicted = sieveResult.getPrecedenceRelations
       val smoothing = 0.00001
-      val tp = predicted.count(p => posGold exists(g => g.isEquivalentTo(p)))
-      val fp = predicted.count(p => ! posGold.exists(g => g.isEquivalentTo(p)))
-      val fn = posGold.count(g => ! predicted.exists(p => p.isEquivalentTo(g)))
+      // get the sets of PrecedenceRelations corresponding to tp, fp, and fn
+      val tp = predicted.filter(p => posGold exists(g => g.isEquivalentTo(p)))
+      val fp = predicted.filter(p => ! posGold.exists(g => g.isEquivalentTo(p)))
+      val fn = posGold.filter(g => ! predicted.exists(p => p.isEquivalentTo(g)))
 
       // micro performance
-      val p = tp / (tp + fp + smoothing)
-      val r = tp / (tp + fn + smoothing)
+      val p = tp.size / (tp.size + fp.size + smoothing)
+      val r = tp.size / (tp.size + fn.size + smoothing)
       val f1 = (2 * p * r) / (p + r + smoothing)
 
       // for the whole sieve
-      val sievePerformance = Performance(lbl, "**ALL**", p, r, f1, tp, fp, fn)
+      val sievePerformance = Performance(lbl, "**ALL**", p, r, f1, tp.size, fp.size, fn.size)
+
+      // write false positives and false negatives to files
+      FileUtils.writeStringToFile(new File(s"false-positives-${fp.size}.txt"), summarizePrecedenceRelations(fp.toSeq))
+      FileUtils.writeStringToFile(new File(s"false-negatives-${fn.size}.txt"), summarizePrecedenceRelations(fn))
 
       val rulePerformance: Seq[Performance] = {
         val rulePs = predicted.groupBy(pr => (pr.foundBy, pr.evidence.head.foundBy))
