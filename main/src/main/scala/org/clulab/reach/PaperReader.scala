@@ -63,7 +63,7 @@ object PaperReader extends LazyLogging {
     val data: ParArray[(String, Vector[Mention])] = for {
       file <- dir.listFiles.par // read papers in parallel
       // allow either nxml or csv files
-      if file.getName.endsWith(".nxml") || file.getName.endsWith(".csv")
+      if file.getName.endsWith(".nxml") || file.getName.endsWith(".tsv")
     } yield readPaper(file)
     data.seq.toMap
   }
@@ -76,7 +76,7 @@ object PaperReader extends LazyLogging {
   def readPaper(file: File): (String, Vector[Mention]) = file match {
     case nxml if nxml.getName.endsWith(".nxml") =>
       readNXMLPaper(nxml)
-    case dsv if dsv.getName.endsWith(".csv") || dsv.getName.endsWith("tsv") =>
+    case dsv if dsv.getName.endsWith("tsv") =>
       readDSVPaper(dsv)
     case txt if txt.getName.endsWith(".txt") =>
       readPlainTextPaper(txt)
@@ -92,7 +92,7 @@ object PaperReader extends LazyLogging {
   }
 
   private def readDSVPaper(file: File): (String, Vector[Mention]) = {
-    require(file.getName.endsWith(".tsv") || file.getName.endsWith(".csv"), s"Given ${file.getAbsolutePath}, but readDSVPaper only handles .tsv and .dsv files!")
+    require(file.getName.endsWith(".tsv"), s"Given ${file.getAbsolutePath}, but readDSVPaper only handles .tsv and .dsv files!")
     val paperID = FilenameUtils.removeExtension(file.getName)
     //info(s"reading paper $paperID . . .")
     // get a single entry for the valid sections
