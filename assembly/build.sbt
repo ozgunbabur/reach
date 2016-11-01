@@ -6,7 +6,7 @@ libraryDependencies ++= {
   val akkaV = "2.4.3"
   Seq(
     "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-    "ai.lum" %% "common" % "0.0.3",
+    "ai.lum" %% "common" % "0.0.5",
     // graph-based CSP
     //"org.choco-solver" % "choco-graph" % "3.3.0",
     // Twirl
