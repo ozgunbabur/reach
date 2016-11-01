@@ -87,7 +87,7 @@ rules:
     example: "The formation of the ternary complex disrupts the binding interaction between wt Ras and GDP , resulting in release of the bound GDP to produce the wt Ras Cdc25 binary complex .  The second step is the binding of the cellularly abundant GTP to the wt Ras complexed with Cdc25 ; this binding expels the bound Cdc25 from wt Ras to produce GTP bound wt Ras ."
     pattern: |
       before:ComplexEvent = @ComplexEvent
-      after:Binding = (?<= [tag=DT] second step []*) @Binding
+      after:Binding = (?<= [tag=DT] [!lemma=/^(first|initial)$/] step []*) @Binding
 
 
   - name: cross-sentence-furthermore
