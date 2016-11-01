@@ -10,6 +10,8 @@ import org.apache.commons.io.{FileUtils, FilenameUtils}
 import org.clulab.reach.assembly._
 import org.clulab.reach.assembly.export.{AssemblyExporter, ExportFilters, Row}
 import org.clulab.odin._
+import org.clulab.reach.mentions._
+import org.clulab.reach.mentions.serialization.json._
 import org.clulab.reach.assembly.sieves.{AssemblySieve, DeduplicationSieves}
 import org.clulab.reach.export.OutputDegrader
 import org.clulab.reach.utils.MentionManager
@@ -216,6 +218,14 @@ class ReachCLI(
         }
         ae.writeRows(outFile, cols, AssemblyExporter.SEP, arizonaFilter)
 
+      case ("json", _) =>
+        // compress output
+//        mentions.head.document.text = None
+//        mentions.head.document.sentences.foreach{ s =>
+//          s.dependenciesByType - org.clulab.struct.GraphMap.STANFORD_BASIC
+//        }
+        val cms = mentions.map(_.toCorefMention)
+        cms.saveJSON(new File(outputDir, s"$paperId-out.json"), pretty = false)
       case _ => throw new RuntimeException(s"Output format ${outputType.toLowerCase} not yet supported!")
     }
   }
