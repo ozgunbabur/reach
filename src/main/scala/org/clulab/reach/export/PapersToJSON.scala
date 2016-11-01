@@ -1,15 +1,16 @@
-package org.clulab.reach.export.server
+package org.clulab.reach.export
 
-import org.clulab.reach.PaperReader
-import org.clulab.reach.mentions._
-import org.clulab.reach.mentions.serialization.json._
-import scala.collection.parallel.ForkJoinTaskSupport
+import java.io.File
+
+import ai.lum.common.ConfigUtils._
+import ai.lum.common.FileUtils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.FileUtils
-import ai.lum.common.ConfigUtils._
-import ai.lum.common.FileUtils._
-import java.io.File
+import org.clulab.reach.PaperReader
+import org.clulab.reach.mentions.serialization.json._
+
+import scala.collection.parallel.ForkJoinTaskSupport
 
 
 /** Built with resuming aborted jobs in mind,
