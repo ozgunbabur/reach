@@ -194,15 +194,17 @@ object BuildCorpusWithRedundancies extends App with LazyLogging {
   val skip: Set[String] = config[List[String]]("assembly.corpus.constraints.skip").toSet
   val minSeen = config[Int]("assembly.corpus.constraints.minSeen")
 
-  logger.info(s"Loading dataset ...")
   val jsonFiles = new File(config.getString("assembly.corpus.jsonDir")).listFiles.par
   val threadLimit: Int = config[Int]("threadLimit")
 
+  logger.info(s"skipping ${skip.size} files")
+  logger.info(s"minSeen:\t$minSeen")
+  logger.info(s"Using $threadLimit threads")
   jsonFiles.tasksupport =
     new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(threadLimit))
 
-  // TODO: generate list of PMC ids to skip
   // prepare corpus
+  logger.info(s"Loading dataset ...")
   val eps = for {
     f <- jsonFiles
     cms = ReachJSONSerializer.toCorefMentions(f)
