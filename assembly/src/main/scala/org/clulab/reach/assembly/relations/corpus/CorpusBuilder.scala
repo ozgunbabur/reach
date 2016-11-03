@@ -212,6 +212,7 @@ object BuildCorpusWithRedundancies extends App with LazyLogging {
     // should this paper be skipped?
     if ! skip.contains(paperID)
     candiateEPs = selectEventPairs(cms)
+    _ = logger.info(s"Found ${candiateEPs.size} candidate EPs for $paperID")
     validPairs = findRedundantEPs(candiateEPs, minSeen)
     if validPairs.nonEmpty
     _ = logger.info(s"Found ${validPairs.size} valid pairs in $paperID")
