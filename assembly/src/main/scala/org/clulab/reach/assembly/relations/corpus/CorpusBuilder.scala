@@ -4,12 +4,14 @@ import org.clulab.reach.mentions._
 import org.clulab.reach.assembly.AssemblyManager
 import org.clulab.reach.assembly.sieves.Constraints
 import org.clulab.odin._
-import scala.util.Try
+import ai.lum.common.ConfigUtils._
+import ai.lum.common.FileUtils._
 import collection.JavaConversions._
-import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import java.io.File
+import org.clulab.reach.mentions.serialization.json.{ JSONSerializer => ReachJSONSerializer }
+import scala.collection.parallel.ForkJoinTaskSupport
 
 
 /**
@@ -131,6 +133,25 @@ object CorpusBuilder {
       .toSeq
       .sortBy{ ep => (ep.doc.id.getOrElse(""), ep.sentenceIndices.head) }
   }
+
+  def findRedundantEPs(eps: Seq[EventPair], minSeen:Int = 2): Seq[EventPair] = {
+
+    val am = AssemblyManager(eps.flatMap(ep => Seq(ep.e1, ep.e2)))
+    def countEquivalentEPs(ep: EventPair): Int = {
+      eps.count{ other =>
+        other.e1 != ep.e1 &&
+          other.e2 != ep.e2 &&
+          am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e1)) &&
+          am.getEER(other.e2).isEquivalentTo(am.getEER(ep.e2))
+      }
+    }
+
+    // filter pairs
+    for {
+      ep <- eps
+      if countEquivalentEPs(ep) >= minSeen
+    } yield ep
+  }
 }
 
 
@@ -158,5 +179,47 @@ object BuildCorpus extends App with LazyLogging {
   val outDir = new File(config.getString("assembly.corpus.corpusDir"))
   // create corpus and write to file
   val corpus = Corpus(eps)
+  corpus.writeJSON(outDir, pretty = false)
+}
+
+/**
+  * Builds a relation corpus from a serialized dataset. <br>
+  * Corpus is written as json
+  */
+object BuildCorpusWithRedundancies extends App with LazyLogging {
+
+  import CorpusBuilder._
+
+  // corpus constraints
+  val skip: Set[String] = config[List[String]]("assembly.corpus.constraints.skip").toSet
+  val minSeen = config[Int]("assembly.corpus.constraints.minSeen")
+
+  logger.info(s"Loading dataset ...")
+  val jsonFiles = new File(config.getString("assembly.corpus.jsonDir")).listFiles.par
+  val threadLimit: Int = config[Int]("threadLimit")
+
+  jsonFiles.tasksupport =
+    new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(threadLimit))
+
+  // TODO: generate list of PMC ids to skip
+  // prepare corpus
+  val eps = for {
+    f <- jsonFiles
+    cms = ReachJSONSerializer.toCorefMentions(f)
+    paperID = getPMID(cms.head)
+    // should this paper be skipped?
+    if ! skip.contains(paperID)
+    candiateEPs = selectEventPairs(cms)
+    validPairs = findRedundantEPs(candiateEPs, minSeen)
+    if validPairs.nonEmpty
+    _ = logger.info(s"Found ${validPairs.size} valid pairs in $paperID")
+    ep <- validPairs
+  } yield ep
+
+  logger.info(s"Found ${eps.size} examples for relation corpus ...")
+
+  val outDir: File = config[File]("assembly.corpus.corpusDir")
+  // create corpus and write to file
+  val corpus = Corpus(eps.seq)
   corpus.writeJSON(outDir, pretty = false)
 }
