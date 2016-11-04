@@ -25,14 +25,19 @@ object Constraints {
   }
 
   // It's neither the case that x is a predecessor of y nor vice versa
-  def noExistingPrecedence(x: Mention, y: Mention, am:AssemblyManager): Boolean = {
-    noExistingPrecedence(am.getEER(x), am.getEER(y))
+  def noExistingPrecedence(
+    x: Mention,
+    y: Mention,
+    am:AssemblyManager,
+    // strict matching is the default
+    ignoreMods: Boolean = false): Boolean = {
+    noExistingPrecedence(am.getEER(x), am.getEER(y), ignoreMods)
   }
 
   // It's neither the case that x is a predecessor of y nor vice versa
-  def noExistingPrecedence(x: EntityEventRepresentation, y: EntityEventRepresentation): Boolean = {
-    !(x.manager.distinctPredecessorsOf(x).map(_.equivalenceHash) contains y.equivalenceHash) &&
-      !(y.manager.distinctPredecessorsOf(y).map(_.equivalenceHash) contains x.equivalenceHash)
+  def noExistingPrecedence(x: EntityEventRepresentation, y: EntityEventRepresentation, ignoreMods: Boolean): Boolean = {
+    !(x.manager.distinctPredecessorsOf(x, ignoreMods).map(_.equivalenceHash(ignoreMods)) contains y.equivalenceHash(ignoreMods)) &&
+      !(y.manager.distinctPredecessorsOf(y, ignoreMods).map(_.equivalenceHash(ignoreMods)) contains x.equivalenceHash(ignoreMods))
   }
 
   //
@@ -40,9 +45,9 @@ object Constraints {
   //
 
   /** Checks if two Mentions have an equivalent EER */
-  def areEquivalent(m1: Mention, m2: Mention): Boolean = {
+  def areEquivalent(m1: Mention, m2: Mention, ignoreMods: Boolean): Boolean = {
     val am = AssemblyManager(Seq(m1, m2))
-    am.getEER(m1).isEquivalentTo(am.getEER(m2))
+    am.getEER(m1).isEquivalentTo(am.getEER(m2), ignoreMods)
   }
 
   /** Checks if two Mentions share at least one SimpleEntity with the same grounding ID */
@@ -82,7 +87,7 @@ object Constraints {
   }
 
   /** Determine if two mentions share an equivalent controlled/patient **/
-  def shareControlleds(mention1: Mention, mention2: Mention): Boolean = {
+  def shareControlleds(mention1: Mention, mention2: Mention, ignoreMods: Boolean): Boolean = {
     // resolve both event mentions
     val m1 = AssemblyManager.getResolvedForm(mention1)
     val m2 = AssemblyManager.getResolvedForm(mention2)
@@ -97,8 +102,8 @@ object Constraints {
       case other => Seq(other)
     }
 
-    val m1controlleds = getControlled(m1).map(manager.getEER).map(_.equivalenceHash).toSet
-    val m2controlleds = getControlled(m2).map(manager.getEER).map(_.equivalenceHash).toSet
+    val m1controlleds = getControlled(m1).map(manager.getEER).map(_.equivalenceHash(ignoreMods)).toSet
+    val m2controlleds = getControlled(m2).map(manager.getEER).map(_.equivalenceHash(ignoreMods)).toSet
 
     m1controlleds.intersect(m2controlleds).nonEmpty
   }

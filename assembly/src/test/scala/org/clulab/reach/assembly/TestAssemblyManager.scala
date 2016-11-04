@@ -155,7 +155,8 @@ class TestAssemblyManager extends FlatSpec with Matchers {
     val complexes = am.getComplexes
 
     val (c1, c2) = (complexes.head, complexes.last)
-    c1 isEquivalentTo c2 should be(true)
+    c1.isEquivalentTo(c2, ignoreMods = false) should be(true)
+    c1.isEquivalentTo(c2, ignoreMods = true) should be(true)
   }
 
   it should "have 2 mentions as evidence" in {
@@ -302,18 +303,18 @@ class TestAssemblyManager extends FlatSpec with Matchers {
     val p = mentions.filter(_ matches "Phosphorylation").head
 
     // test AssemblyManager's methods
-    am.predecessorsOf(p) should have size (0)
-    am.distinctPredecessorsOf(p) should have size (0)
-    am.successorsOf(p) should have size (0)
-    am.distinctSuccessorsOf(p) should have size (0)
+    am.predecessorsOf(p, ignoreMods = false) should have size (0)
+    am.distinctPredecessorsOf(p, ignoreMods = false) should have size (0)
+    am.successorsOf(p, ignoreMods = false) should have size (0)
+    am.distinctSuccessorsOf(p, ignoreMods = false) should have size (0)
 
     val se = am.getSimpleEvent(p)
 
     // test Event methods
-    se.predecessors should have size (0)
-    se.distinctPredecessors should have size (0)
-    se.successors should have size (0)
-    se.distinctSuccessors should have size (0)
+    se.predecessors(ignoreMods = false) should have size (0)
+    se.distinctPredecessors(ignoreMods = false) should have size (0)
+    se.successors(ignoreMods = false) should have size (0)
+    se.distinctSuccessors(ignoreMods = false) should have size (0)
   }
 
   val precedenceText = "Ras is phosphorylated by Mek after Mek is bound to p53."
@@ -333,16 +334,16 @@ class TestAssemblyManager extends FlatSpec with Matchers {
     am.storePrecedenceRelation(p, b, foundBy = "mention-based-test")
 
     am.getPrecedenceRelationsFor(p) should have size (1)
-    am.predecessorsOf(p) should have size (0)
-    am.distinctPredecessorsOf(p) should have size (0)
-    am.successorsOf(p) should have size (1)
-    am.distinctSuccessorsOf(p) should have size (1)
+    am.predecessorsOf(p, ignoreMods = false) should have size (0)
+    am.distinctPredecessorsOf(p, ignoreMods = false) should have size (0)
+    am.successorsOf(p, ignoreMods = false) should have size (1)
+    am.distinctSuccessorsOf(p, ignoreMods = false) should have size (1)
 
     am.getPrecedenceRelationsFor(b) should have size (1)
-    am.predecessorsOf(b) should have size (1)
-    am.distinctPredecessorsOf(b) should have size (1)
-    am.successorsOf(b) should have size (0)
-    am.distinctSuccessorsOf(b) should have size (0)
+    am.predecessorsOf(b, ignoreMods = false) should have size (1)
+    am.distinctPredecessorsOf(b, ignoreMods = false) should have size (1)
+    am.successorsOf(b, ignoreMods = false) should have size (0)
+    am.distinctSuccessorsOf(b, ignoreMods = false) should have size (0)
 
     // test eer-based methods
     val pSE = am.getSimpleEvent(p)
@@ -352,33 +353,33 @@ class TestAssemblyManager extends FlatSpec with Matchers {
     am.storePrecedenceRelation(p, b, foundBy = "mention-based-test")
 
     pSE.precedenceRelations should have size (1)
-    pSE.predecessors should have size (0)
-    pSE.distinctPredecessors should have size (0)
-    pSE.successors should have size (1)
-    pSE.distinctSuccessors should have size (1)
+    pSE.predecessors(ignoreMods = false) should have size (0)
+    pSE.distinctPredecessors(ignoreMods = false) should have size (0)
+    pSE.successors(ignoreMods = false) should have size (1)
+    pSE.distinctSuccessors(ignoreMods = false) should have size (1)
 
     bSE.precedenceRelations should have size (1)
-    bSE.predecessors should have size (1)
-    bSE.distinctPredecessors should have size (1)
-    bSE.successors should have size (0)
-    bSE.distinctSuccessors should have size (0)
+    bSE.predecessors(ignoreMods = false) should have size (1)
+    bSE.distinctPredecessors(ignoreMods = false) should have size (1)
+    bSE.successors(ignoreMods = false) should have size (0)
+    bSE.distinctSuccessors(ignoreMods = false) should have size (0)
 
     // test distinct v. non-distinct
     am.storePrecedenceRelation(p, b, foundBy = "mention-based-test2")
     // this is a set, but the difference in
     // foundBy means "mention-based-test2" won't get collapsed
     pSE.precedenceRelations should have size (2)
-    pSE.predecessors should have size (0)
-    pSE.distinctPredecessors should have size (0)
-    pSE.successors should have size (1)
-    pSE.distinctSuccessors should have size (1)
+    pSE.predecessors(ignoreMods = false) should have size (0)
+    pSE.distinctPredecessors(ignoreMods = false) should have size (0)
+    pSE.successors(ignoreMods = false) should have size (1)
+    pSE.distinctSuccessors(ignoreMods = false) should have size (1)
     // this is a set, but the difference in
     // foundBy means "mention-based-test2" won't get collapsed
     bSE.precedenceRelations should have size (2)
-    bSE.predecessors should have size (1)
-    bSE.distinctPredecessors should have size (1)
-    bSE.successors should have size (0)
-    bSE.distinctSuccessors should have size (0)
+    bSE.predecessors(ignoreMods = false) should have size (1)
+    bSE.distinctPredecessors(ignoreMods = false) should have size (1)
+    bSE.successors(ignoreMods = false) should have size (0)
+    bSE.distinctSuccessors(ignoreMods = false) should have size (0)
   }
 
   "AssemblyManager" should s"not contain any EERs for '$negPhos' if all EERs referencing Mek are removed" in {
@@ -405,12 +406,12 @@ class TestAssemblyManager extends FlatSpec with Matchers {
     val am3 = AssemblyManager(mentions.sortBy(_.label).reverse)
 
     def hasEquivalentEERs(manager1: AssemblyManager, manager2: AssemblyManager): Boolean = {
-      val eers1 = manager1.distinctEERs.map(_.equivalenceHash)
-      val eers2 = manager2.distinctEERs.map(_.equivalenceHash)
-      val entities1 = manager1.distinctEntities.map(_.equivalenceHash)
-      val entities2 = manager2.distinctEntities.map(_.equivalenceHash)
-      val events1 = manager1.distinctEvents.map(_.equivalenceHash)
-      val events2 = manager2.distinctEvents.map(_.equivalenceHash)
+      val eers1 = manager1.distinctEERs.map(_.equivalenceHash(ignoreMods = false))
+      val eers2 = manager2.distinctEERs.map(_.equivalenceHash(ignoreMods = false))
+      val entities1 = manager1.distinctEntities.map(_.equivalenceHash(ignoreMods = false))
+      val entities2 = manager2.distinctEntities.map(_.equivalenceHash(ignoreMods = false))
+      val events1 = manager1.distinctEvents.map(_.equivalenceHash(ignoreMods = false))
+      val events2 = manager2.distinctEvents.map(_.equivalenceHash(ignoreMods = false))
 
       ((eers1 intersect eers2).size == (eers1 union eers2).size) &&
         ((entities1 intersect entities2).size == (entities1 union entities2).size) &&

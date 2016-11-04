@@ -69,9 +69,9 @@ object RunAnnotationEval extends App with LazyLogging {
   } {
     val predicted = sieveResult.getPrecedenceRelations
     val smoothing = 0.00001
-    val tp = predicted.count(p => posGold exists(g => g.isEquivalentTo(p)))
-    val fp = predicted.count(p => ! posGold.exists(g => g.isEquivalentTo(p)))
-    val fn = posGold.count(g => ! predicted.exists(p => p.isEquivalentTo(g)))
+    val tp = predicted.count(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = false)))
+    val fp = predicted.count(p => ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = false)))
+    val fn = posGold.count(g => ! predicted.exists(p => p.isEquivalentTo(g, ignoreMods = false)))
 
     // micro performance
     val p = tp / (tp + fp + smoothing)
@@ -83,9 +83,9 @@ object RunAnnotationEval extends App with LazyLogging {
 
     val rulePerformance: Seq[Performance] = {
       val rulePs = predicted.groupBy(pr => (pr.foundBy, pr.evidence.head.foundBy))
-      val allRtp = rulePs.mapValues(_.count(p => posGold exists(g => g.isEquivalentTo(p))))
+      val allRtp = rulePs.mapValues(_.count(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = false))))
       val allRfp = rulePs.mapValues{_.count{p =>
-        val isFP = ! posGold.exists(g => g.isEquivalentTo(p))
+        val isFP = ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = false))
         //if(isFP) displayMention(p.evidence.head)
         isFP
       }
@@ -93,7 +93,7 @@ object RunAnnotationEval extends App with LazyLogging {
       val allRfn = {
         val res = for {
           (foundBy, group) <- rulePs
-          gold = posGold.count(g => ! group.exists(p => p.isEquivalentTo(g)))
+          gold = posGold.count(g => ! group.exists(p => p.isEquivalentTo(g, ignoreMods = false)))
         } yield (foundBy, gold)
         res
       }

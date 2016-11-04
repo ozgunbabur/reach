@@ -67,9 +67,9 @@ object CorpusReader extends LazyLogging {
       // find equivalent mentions for the pair within this paper
       p <- pairs
       e1EER = am.getEER(p.e1)
-      e1EquivMentions = am.getEquivalentEERs(e1EER).flatMap(_.evidence).toSeq
+      e1EquivMentions = am.getEquivalentEERs(e1EER, ignoreMods = false).flatMap(_.evidence).toSeq
       e2EER = am.getEER(p.e2)
-      e2EquivMentions = am.getEquivalentEERs(e2EER).flatMap(_.evidence).toSeq
+      e2EquivMentions = am.getEquivalentEERs(e2EER, ignoreMods = false).flatMap(_.evidence).toSeq
       e1equiv <- e1EquivMentions
       e2equiv <- e2EquivMentions
       // TODO: must both of these be true?

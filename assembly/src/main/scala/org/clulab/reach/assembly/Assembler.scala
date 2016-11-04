@@ -30,7 +30,7 @@ case class Assembler(am: AssemblyManager) extends LazyLogging {
       pr <- am.getPrecedenceRelationsFor(eer)
       after = pr.after
       // current mention should be the successor
-      if after.equivalenceHash == eer.equivalenceHash
+      if after.equivalenceHash(ignoreMods = false) == eer.equivalenceHash(ignoreMods = false)
       e <- pr.evidence
       // only consider links with well-formed evidence
       if e.arguments.contains("before") && e.arguments.contains("after")

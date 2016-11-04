@@ -41,11 +41,11 @@ case class PrecedenceRelation(
   /**
     * Returns true if the input argument is a [[PrecedenceRelation]] with either the same before or after [[EntityEventRepresentation]]s
     * @param other Any comparison object
+    * @param ignoreMods whether or not modifications should be ignored when assessing equivalence
     * @return a Boolean
     */
-  // TODO: Should this be in terms of an Equiv Hash?
-  def isEquivalentTo(other: Any): Boolean = other match {
-    case pr: PrecedenceRelation => this.before.isEquivalentTo(pr.before) || this.after.isEquivalentTo(pr.after)
+  def isEquivalentTo(other: Any, ignoreMods: Boolean): Boolean = other match {
+    case pr: PrecedenceRelation => this.before.isEquivalentTo(pr.before, ignoreMods) || this.after.isEquivalentTo(pr.after, ignoreMods)
     case _ => false
   }
 }
@@ -74,9 +74,10 @@ class AssemblyManager(
   private var mentionStateToID: immutable.Map[MentionState, IDPointer] = m2id.toMap
   private var idToEER: immutable.Map[IDPointer, EER] = id2eer.toMap
   // faster lookup of equivalent events
+  // FIXME: should ignoreMods be false?
   private var ehToEERs: immutable.Map[Int, Set[EER]] = {
     // group by EH
-    id2eer.toSeq.groupBy(_._2.equivalenceHash)
+    id2eer.toSeq.groupBy(_._2.equivalenceHash(ignoreMods = false))
       // get EERs
       .mapValues(_.map(_._2).toSet)
   }
@@ -199,87 +200,95 @@ class AssemblyManager(
   /**
     * Retrieves the distinct Set of EER predecessors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
+    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of distinct EntityEventRepresentations known to causally precede any EER corresponding to [[EntityEventRepresentation.equivalenceHash]]
     */
-  def distinctPredecessorsOf(eer: EER): Set[EER] = {
-    val predecessors = predecessorsOf(eer)
-    distinctEERsFromSet(predecessors)
+  def distinctPredecessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = {
+    val predecessors = predecessorsOf(eer, ignoreMods)
+    distinctEERsFromSet(predecessors, ignoreMods)
   }
 
   /**
     * Retrieves the distinct Set of EER predecessors for the provided Mention (m).
     * @param m an Odin Mention
+    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of distinct EntityEventRepresentations known to causally precede the EER corresponding to M
     */
-  def distinctPredecessorsOf(m: Mention): Set[EER] = m match {
+  def distinctPredecessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
     case isValid if AssemblyManager.isValidMention(m) =>
-      distinctPredecessorsOf(getOrCreateEER(m))
+      distinctPredecessorsOf(getOrCreateEER(m), ignoreMods)
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the non-distinct Set of EER predecessors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
+    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of non-distinct EntityEventRepresentations known to causally precede eer
     */
-  def predecessorsOf(eer: EER): Set[EER] = for {
+  def predecessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = for {
     pr <- EERtoPrecedenceRelations(eer)
-    if pr.before.equivalenceHash != eer.equivalenceHash
+    if pr.before.equivalenceHash(ignoreMods) != eer.equivalenceHash(ignoreMods)
   } yield pr.before
 
   /**
     * Retrieves the non-distinct Set of EER predecessors for the provided Mention (m).
     * @param m an Odin Mention
+    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of non-distinct EntityEventRepresentations known to causally precede the EER corresponding to m
     */
-  def predecessorsOf(m: Mention): Set[EER] = m match {
+  def predecessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
     // check if valid mention
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      predecessorsOf(getOrCreateEER(isValid))
+      predecessorsOf(getOrCreateEER(isValid), ignoreMods)
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the distinct Set of EER successors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
+    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of distinct EntityEventRepresentations known to causally succeed any EER corresponding to eh
     */
-  def distinctSuccessorsOf(eer: EER): Set[EER] = {
-    val successors = successorsOf(eer)
-    distinctEERsFromSet(successors)
+  def distinctSuccessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = {
+    val successors = successorsOf(eer, ignoreMods)
+    distinctEERsFromSet(successors, ignoreMods)
   }
 
   /**
     * Retrieves the distinct Set of EER successors for the provided Mention (m).
     * @param m an Odin Mention
+    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of distinct EntityEventRepresentations known to causally succeed any EER corresponding to eh
     */
-  def distinctSuccessorsOf(m: Mention): Set[EER] = m match {
+  def distinctSuccessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
     // check if Mention is valid
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      distinctSuccessorsOf(getOrCreateEER(isValid))
+      distinctSuccessorsOf(getOrCreateEER(isValid), ignoreMods)
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the non-distinct Set of EER successors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
+    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of non-distinct EntityEventRepresentations known to causally succeed eer
     */
-  def successorsOf(eer: EER): Set[EER] = for {
+  def successorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = for {
     pr <- getPrecedenceRelationsFor(eer)
-    if pr.after.equivalenceHash != eer.equivalenceHash
+    if pr.after.equivalenceHash(ignoreMods) != eer.equivalenceHash(ignoreMods)
   } yield eer
 
   /**
     * Retrieves the non-distinct Set of EER successors for the provided Mention (m).
     * @param m an Odin Mention
+    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of non-distinct EntityEventRepresentations known to causally succeed the EER corresponding to m
     */
-  def successorsOf(m: Mention): Set[EER] = m match {
+  def successorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
     // check if Mention is valid
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      successorsOf(getOrCreateEER(isValid))
+      successorsOf(getOrCreateEER(isValid), ignoreMods)
     case _ => Set.empty[EER]
   }
 
@@ -363,17 +372,27 @@ class AssemblyManager(
     // update LUT #2
     updateIDtoEERTable(id, eer)
     // update LUT #3
-    updateEHtoEERsTable(eer.equivalenceHash, eer)
+    updateEHtoEERsTable(eer)
   }
 
   /**
     * Updates the [[ehToEERs]] LUT
-    * @param eh an equivalenceHash
     * @param eer an [[EER]]
     */
-  private def updateEHtoEERsTable(eh: Int, eer: EER): Unit = {
-    val idsForEH = ehToEERs.getOrElse(eh, Set.empty[EER]) ++ Set(eer)
-    ehToEERs = ehToEERs + (eh -> idsForEH)
+  private def updateEHtoEERsTable(eer: EER): Unit = {
+
+    // get EERs for the given hash
+    def getIDs(eh: Int): Set[EER] = ehToEERs.getOrElse(eh, Set.empty[EER]) ++ Set(eer)
+
+    // update the set of EERs with identical mods
+    val eh1 = eer.equivalenceHash(ignoreMods = false)
+    val eers1 = getIDs(eh1)
+    ehToEERs = ehToEERs + (eh1 -> eers1)
+
+    // update the set of EERs without identical mods
+    val eh2 = eer.equivalenceHash(ignoreMods = true)
+    val eers2 = getIDs(eh2)
+    ehToEERs = ehToEERs + (eh2 -> eers2)
   }
 
   /**
@@ -402,7 +421,7 @@ class AssemblyManager(
   private def updateIDtoEERTable(id: IDPointer, eer: EER): Unit = {
     idToEER = idToEER + (id -> eer)
     // update the ehToEERs table
-    updateEHtoEERsTable(eer.equivalenceHash, eer)
+    updateEHtoEERsTable(eer)
   }
 
   //
@@ -1316,7 +1335,7 @@ class AssemblyManager(
     * @return a sequence of Mention serving as textual evidence of the given representation
     */
   def getEvidence(eer: EER): Set[Mention] = {
-    val equivEERs: Set[EER] = ehToEERs.getOrElse(eer.equivalenceHash, Set.empty[EER])
+    val equivEERs: Set[EER] = ehToEERs.getOrElse(eer.equivalenceHash(ignoreMods = false), Set.empty[EER])
     // retrieve the mention by id
     val evidence = for {
       equivEER <- equivEERs
@@ -1338,7 +1357,7 @@ class AssemblyManager(
     * @return
     */
   def getEquivalentEERs(eh: Int): Set[EER] = ehToEERs.getOrElse(eh, Set.empty[EER])
-  def getEquivalentEERs(eer: EER): Set[EER] = ehToEERs.getOrElse(eer.equivalenceHash, Set.empty[EER])
+  def getEquivalentEERs(eer: EER, ignoreMods: Boolean): Set[EER] = ehToEERs.getOrElse(eer.equivalenceHash(ignoreMods), Set.empty[EER])
 
   /**
     * Returns groups of equivalent [[EntityEventRepresentation]], ignoring differences due to [[IDPointer]] references.
@@ -1350,10 +1369,11 @@ class AssemblyManager(
   /**
     * Gets distinct members of eers after grouping by [[EntityEventRepresentation.equivalenceHash]].
     * @param eers an [[EntityEventRepresentation]] Set
+    * @param ignoreMods whether or not to ignore modifications when determining the distinct set of EERs
     * @return
     */
-  def distinctEERsFromSet(eers: Set[EER]): Set[EER] = {
-    eers.groupBy(_.equivalenceHash)
+  def distinctEERsFromSet(eers: Set[EER], ignoreMods: Boolean): Set[EER] = {
+    eers.groupBy(_.equivalenceHash(ignoreMods))
       .mapValues(_.head)
       .values
       .toSet
@@ -1768,12 +1788,12 @@ class AssemblyManager(
   // Set diff
   //
 
-  def EERdiff(eers1: Set[EER], eers2: Set[EER]): Set[EER] = {
-    eers1.filterNot(eer => eers2.exists(_.isEquivalentTo(eer)))
+  def EERdiff(eers1: Set[EER], eers2: Set[EER], ignoreMods: Boolean): Set[EER] = {
+    eers1.filterNot(eer => eers2.exists(_.isEquivalentTo(eer, ignoreMods)))
   }
 
-  def EERintersection(eers1: Set[EER], eers2: Set[EER]): Set[EER] = {
-    eers1.filter(eer => eers2.exists(_.isEquivalentTo(eer)))
+  def EERintersection(eers1: Set[EER], eers2: Set[EER], ignoreMods: Boolean): Set[EER] = {
+    eers1.filter(eer => eers2.exists(_.isEquivalentTo(eer, ignoreMods)))
   }
 
   //

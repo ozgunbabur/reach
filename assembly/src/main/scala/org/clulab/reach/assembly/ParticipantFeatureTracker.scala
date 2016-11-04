@@ -59,7 +59,7 @@ class ParticipantFeatureTracker(am: AssemblyManager) extends LazyLogging {
     */
   private def getPredecessors(eer: EER, seen: Set[EER] = Set.empty[EER]): Set[EER] = {
     val unseenPredecessors = for {
-      p <- manager.distinctPredecessorsOf(eer)
+      p <- manager.distinctPredecessorsOf(eer, ignoreMods = false)
       if !(seen contains p)
     } yield cache(p, seen ++ Set(eer))
     unseenPredecessors.flatten ++ seen

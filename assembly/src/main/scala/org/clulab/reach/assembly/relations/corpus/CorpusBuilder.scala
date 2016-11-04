@@ -139,8 +139,8 @@ object CorpusBuilder {
     val am = AssemblyManager(eps.flatMap(ep => Seq(ep.e1, ep.e2)))
     def countEquivalentEPs(ep: EventPair): Int = {
       eps.count{ other =>
-          am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e1)) &&
-          am.getEER(other.e2).isEquivalentTo(am.getEER(ep.e2))
+          am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e1), ignoreMods = true) &&
+          am.getEER(other.e2).isEquivalentTo(am.getEER(ep.e2), ignoreMods = true)
       }
     }
 

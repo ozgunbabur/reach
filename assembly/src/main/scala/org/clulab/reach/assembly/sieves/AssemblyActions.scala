@@ -22,8 +22,8 @@ class AssemblyActions extends Actions with LazyLogging {
       if m.arguments contains AFTER
       b <- m.arguments(BEFORE)
       a <- m.arguments(AFTER)
-      // "a" should not be equivalent to "b"
-      if !Constraints.areEquivalent(b, a)
+      // "a" should not be strictly equivalent to "b"
+      if !Constraints.areEquivalent(b, a, ignoreMods = false)
       if Constraints.shareEntityGrounding(b, a)
       if Constraints.isValidRelationPair(b, a)
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
@@ -38,7 +38,8 @@ class AssemblyActions extends Actions with LazyLogging {
     m <- validatePrecedenceRelations(mentions, state)
     b <- m.arguments(BEFORE)
     a <- m.arguments(AFTER)
-    if Constraints.shareControlleds(b, a)
+    // FIXME: should ignoreMods be false?
+    if Constraints.shareControlleds(b, a, ignoreMods = false)
   } yield mkPrecedenceMention(parent = m, before = b, after = a)
 
   def expandArgs(mentions: Seq[Mention], state: State): Seq[Mention] = {
@@ -67,7 +68,7 @@ class AssemblyActions extends Actions with LazyLogging {
     def resolvesToBefore(before: Mention, afterArgs: Seq[Mention]): Boolean = {
       val am = AssemblyManager(afterArgs :+ before)
       // val afterArgsSet: Set[Mention] = afterArgs.map(AssemblyManager.getResolvedForm).toSet
-      val isTrue: Boolean = afterArgs.map(am.getEER).map(_.equivalenceHash).toSet contains am.getEER(before).equivalenceHash
+      val isTrue: Boolean = afterArgs.map(am.getEER).map(_.equivalenceHash(ignoreMods = false)).toSet contains am.getEER(before).equivalenceHash(ignoreMods = false)
       if (isTrue) {
         logger.info(s"afterArgResolvesToBefore passes for before (${before.label}) with text: '${before.text}'")
       }

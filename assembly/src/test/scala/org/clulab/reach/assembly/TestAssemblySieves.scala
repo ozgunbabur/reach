@@ -31,10 +31,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before.equivalenceHash == pRep.equivalenceHash should be (true)
-    pr.after.equivalenceHash == uRep.equivalenceHash should be (true)
+    pr.before.equivalenceHash(ignoreMods = false) == pRep.equivalenceHash(ignoreMods = false) should be (true)
+    pr.before.equivalenceHash(ignoreMods = true) == pRep.equivalenceHash(ignoreMods = true) should be (true)
+    pr.after.equivalenceHash(ignoreMods = false) == uRep.equivalenceHash(ignoreMods = false) should be (true)
+    pr.after.equivalenceHash(ignoreMods = true) == uRep.equivalenceHash(ignoreMods = true) should be (true)
   }
 
   val tamSent2 = "AFT will be ubiquitinated only if BEF is first phosphorylated"
@@ -56,10 +58,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
   }
 
   val tamSent3 = "AFT was ubiquitinated when BEF had been phosphorylated"
@@ -81,10 +85,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
   }
 
 
@@ -110,10 +116,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val bRep = am.distinctSimpleEvents("Binding").head
     val pRep = am.distinctRegulations(AssemblyManager.positive).head
 
-    am.distinctPredecessorsOf(pRep).size should be(1)
+    am.distinctPredecessorsOf(pRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(pRep).head
-    pr.before.equivalenceHash == bRep.equivalenceHash should be (true)
-    pr.after.equivalenceHash == pRep.equivalenceHash should be (true)
+    pr.before.equivalenceHash(ignoreMods = false) == bRep.equivalenceHash(ignoreMods = false) should be (true)
+    pr.before.equivalenceHash(ignoreMods = true) == bRep.equivalenceHash(ignoreMods = true) should be (true)
+    pr.after.equivalenceHash(ignoreMods = false) == pRep.equivalenceHash(ignoreMods = false) should be (true)
+    pr.after.equivalenceHash(ignoreMods = true) == pRep.equivalenceHash(ignoreMods = true) should be (true)
 
   }
 
@@ -138,10 +146,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo  uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
   }
 
   val interSent2 = "BEF was phosphorylated. Subsequently AFT was ubiquitinated."
@@ -163,10 +173,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
   }
 
   val interSent3 = "AFT was ubiquitinated. Prior to this, BEF was phosphorylated."
@@ -188,10 +200,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
   }
 
   val interSent4 = "AFT was ubiquitinated. Previously, BEF was phosphorylated."
@@ -213,10 +227,12 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep).size should be(1)
+    am.distinctPredecessorsOf(uRep, ignoreMods = true).size should be(1)
     val pr = am.getPrecedenceRelationsFor(uRep).head
-    pr.before isEquivalentTo pRep should be (true)
-    pr.after isEquivalentTo uRep should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = false) should be (true)
+    pr.before.isEquivalentTo(pRep, ignoreMods = true) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = false) should be (true)
+    pr.after.isEquivalentTo(uRep, ignoreMods = true) should be (true)
   }
 
 
@@ -240,7 +256,7 @@ class TestAssemblySieves extends FlatSpec with Matchers {
     val uRep = am.distinctSimpleEvents("Ubiquitination").head
     val pRep = am.distinctSimpleEvents("Phosphorylation").head
 
-    am.distinctPredecessorsOf(uRep) should have size (0)
+    am.distinctPredecessorsOf(uRep, ignoreMods = false) should have size (0)
   }
 
 }

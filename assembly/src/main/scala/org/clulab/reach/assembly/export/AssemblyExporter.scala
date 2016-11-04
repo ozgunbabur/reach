@@ -149,7 +149,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
   // TODO: A better version of this should probably belong to the manager
   val EERLUT: Map[Int, String] = distinctEERS.map{
     case eer =>
-      (eer.equivalenceHash, mkEventID(eer))
+      (eer.equivalenceHash(ignoreMods = false), mkEventID(eer))
   }.toMap
 
   val grounding2Text: Map[GroundingID, String] = {
@@ -226,7 +226,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
     case act: Activation =>
       act.controlled.map {
         // get IDs of any events
-        case event: Event => EERLUT.getOrElse(event.equivalenceHash, reportError(act, event))
+        case event: Event => EERLUT.getOrElse(event.equivalenceHash(ignoreMods = false), reportError(act, event))
         // represent entities directly
         case entity: Entity =>
           val activationMod = act.polarity match {
@@ -240,7 +240,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
     // inputs to a regulation are other events
     case reg: Regulation =>
       // get event IDs for each controlled
-      reg.controlled.map(c => EERLUT.getOrElse(c.equivalenceHash, reportError(reg, c))).mkString(", ")
+      reg.controlled.map(c => EERLUT.getOrElse(c.equivalenceHash(ignoreMods = false), reportError(reg, c))).mkString(", ")
   }
 
   def createOutput(eer: EntityEventRepresentation, mods: String = ""): String = eer match {
@@ -289,7 +289,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
   def precededBy(eer: EntityEventRepresentation): Set[String] = eer match {
     case entity: Entity => Set.empty[String]
     case event: Event =>
-      event.predecessors.map(se => EERLUT(se.equivalenceHash))
+      event.predecessors(ignoreMods = false).map(se => EERLUT(se.equivalenceHash(ignoreMods = false)))
   }
 
   def writeRows(
@@ -333,7 +333,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
             createInput(event),
             createOutput(event),
             createController(event),
-            EERLUT(event.equivalenceHash),
+            EERLUT(event.equivalenceHash(ignoreMods = false)),
             getEventLabel(event),
             precededBy(event),
             event.negated,
