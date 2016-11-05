@@ -200,95 +200,87 @@ class AssemblyManager(
   /**
     * Retrieves the distinct Set of EER predecessors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
-    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of distinct EntityEventRepresentations known to causally precede any EER corresponding to [[EntityEventRepresentation.equivalenceHash]]
     */
-  def distinctPredecessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = {
-    val predecessors = predecessorsOf(eer, ignoreMods)
-    distinctEERsFromSet(predecessors, ignoreMods)
+  def distinctPredecessorsOf(eer: EER): Set[EER] = {
+    val predecessors = predecessorsOf(eer)
+    distinctEERsFromSet(predecessors, ignoreMods = false)
   }
 
   /**
     * Retrieves the distinct Set of EER predecessors for the provided Mention (m).
     * @param m an Odin Mention
-    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of distinct EntityEventRepresentations known to causally precede the EER corresponding to M
     */
-  def distinctPredecessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
+  def distinctPredecessorsOf(m: Mention): Set[EER] = m match {
     case isValid if AssemblyManager.isValidMention(m) =>
-      distinctPredecessorsOf(getOrCreateEER(m), ignoreMods)
+      distinctPredecessorsOf(getOrCreateEER(m))
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the non-distinct Set of EER predecessors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
-    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of non-distinct EntityEventRepresentations known to causally precede eer
     */
-  def predecessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = for {
+  def predecessorsOf(eer: EER): Set[EER] = for {
     pr <- EERtoPrecedenceRelations(eer)
-    if pr.before.equivalenceHash(ignoreMods) != eer.equivalenceHash(ignoreMods)
+    if pr.after.equivalenceHash(ignoreMods = false) == eer.equivalenceHash(ignoreMods = false)
   } yield pr.before
 
   /**
     * Retrieves the non-distinct Set of EER predecessors for the provided Mention (m).
     * @param m an Odin Mention
-    * @param ignoreMods whether or not to ignore modifications when determining predecessors
     * @return the Set of non-distinct EntityEventRepresentations known to causally precede the EER corresponding to m
     */
-  def predecessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
+  def predecessorsOf(m: Mention): Set[EER] = m match {
     // check if valid mention
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      predecessorsOf(getOrCreateEER(isValid), ignoreMods)
+      predecessorsOf(getOrCreateEER(isValid))
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the distinct Set of EER successors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
-    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of distinct EntityEventRepresentations known to causally succeed any EER corresponding to eh
     */
-  def distinctSuccessorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = {
-    val successors = successorsOf(eer, ignoreMods)
-    distinctEERsFromSet(successors, ignoreMods)
+  def distinctSuccessorsOf(eer: EER): Set[EER] = {
+    val successors = successorsOf(eer)
+    distinctEERsFromSet(successors, ignoreMods = false)
   }
 
   /**
     * Retrieves the distinct Set of EER successors for the provided Mention (m).
     * @param m an Odin Mention
-    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of distinct EntityEventRepresentations known to causally succeed any EER corresponding to eh
     */
-  def distinctSuccessorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
+  def distinctSuccessorsOf(m: Mention): Set[EER] = m match {
     // check if Mention is valid
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      distinctSuccessorsOf(getOrCreateEER(isValid), ignoreMods)
+      distinctSuccessorsOf(getOrCreateEER(isValid))
     case _ => Set.empty[EER]
   }
 
   /**
     * Retrieves the non-distinct Set of EER successors for the provided EER.
     * @param eer an [[EntityEventRepresentation]]
-    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of non-distinct EntityEventRepresentations known to causally succeed eer
     */
-  def successorsOf(eer: EER, ignoreMods: Boolean): Set[EER] = for {
+  def successorsOf(eer: EER): Set[EER] = for {
     pr <- getPrecedenceRelationsFor(eer)
-    if pr.after.equivalenceHash(ignoreMods) != eer.equivalenceHash(ignoreMods)
-  } yield eer
+    if pr.before.equivalenceHash(ignoreMods = false) == eer.equivalenceHash(ignoreMods = false)
+  } yield pr.after
 
   /**
     * Retrieves the non-distinct Set of EER successors for the provided Mention (m).
     * @param m an Odin Mention
-    * @param ignoreMods whether or not to ignore modifications when determining successors
     * @return the Set of non-distinct EntityEventRepresentations known to causally succeed the EER corresponding to m
     */
-  def successorsOf(m: Mention, ignoreMods: Boolean): Set[EER] = m match {
+  def successorsOf(m: Mention): Set[EER] = m match {
     // check if Mention is valid
     case isValid if AssemblyManager.isValidMention(isValid) =>
-      successorsOf(getOrCreateEER(isValid), ignoreMods)
+      successorsOf(getOrCreateEER(isValid))
     case _ => Set.empty[EER]
   }
 

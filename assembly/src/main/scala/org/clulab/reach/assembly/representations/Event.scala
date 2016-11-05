@@ -16,30 +16,30 @@ trait Event extends EntityEventRepresentation {
   }
 
   /** Causal predecessors of this Event */
-  def predecessors(ignoreMods: Boolean): Set[EntityEventRepresentation] =
-    manager.predecessorsOf(this, ignoreMods).map(_.asInstanceOf[Event])
+  def predecessors: Set[EntityEventRepresentation] =
+    manager.predecessorsOf(this).map(_.asInstanceOf[Event])
 
   /** Distinct causal predecessors of this Event */
-  def distinctPredecessors(ignoreMods: Boolean): Set[EntityEventRepresentation] =
-    manager.distinctPredecessorsOf(this, ignoreMods).map(_.asInstanceOf[Event])
+  def distinctPredecessors: Set[EntityEventRepresentation] =
+    manager.distinctPredecessorsOf(this).map(_.asInstanceOf[Event])
 
   /** Equivalent causal predecessors of this Event */
   def equivalentPredecessors(ignoreMods: Boolean): Set[EntityEventRepresentation] = for {
-    p <- predecessors(ignoreMods)
+    p <- predecessors
     e <- manager.getEquivalentEERs(p, ignoreMods)
   } yield e
 
   /** Causal successors of this Event */
-  def successors(ignoreMods: Boolean): Set[EntityEventRepresentation] =
-    manager.successorsOf(this, ignoreMods).map(_.asInstanceOf[Event])
+  def successors: Set[EntityEventRepresentation] =
+    manager.successorsOf(this).map(_.asInstanceOf[Event])
 
   /** Distinct causal successors of this Event */
-  def distinctSuccessors(ignoreMods: Boolean): Set[EntityEventRepresentation] =
-    manager.distinctSuccessorsOf(this, ignoreMods).map(_.asInstanceOf[Event])
+  def distinctSuccessors: Set[EntityEventRepresentation] =
+    manager.distinctSuccessorsOf(this).map(_.asInstanceOf[Event])
 
   /** Equivalent causal successors of this Event */
   def equivalentSuccessors(ignoreMods: Boolean): Set[EntityEventRepresentation] = for {
-    s <- successors(ignoreMods)
+    s <- successors
     e <- manager.getEquivalentEERs(s, ignoreMods)
   } yield e
 

@@ -36,8 +36,8 @@ object Constraints {
 
   // It's neither the case that x is a predecessor of y nor vice versa
   def noExistingPrecedence(x: EntityEventRepresentation, y: EntityEventRepresentation, ignoreMods: Boolean): Boolean = {
-    !(x.manager.distinctPredecessorsOf(x, ignoreMods).map(_.equivalenceHash(ignoreMods)) contains y.equivalenceHash(ignoreMods)) &&
-      !(y.manager.distinctPredecessorsOf(y, ignoreMods).map(_.equivalenceHash(ignoreMods)) contains x.equivalenceHash(ignoreMods))
+    !(x.manager.distinctPredecessorsOf(x).map(_.equivalenceHash(ignoreMods)) contains y.equivalenceHash(ignoreMods)) &&
+      !(y.manager.distinctPredecessorsOf(y).map(_.equivalenceHash(ignoreMods)) contains x.equivalenceHash(ignoreMods))
   }
 
   //

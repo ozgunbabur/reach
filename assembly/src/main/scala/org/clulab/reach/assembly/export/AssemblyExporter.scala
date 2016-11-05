@@ -289,7 +289,7 @@ class AssemblyExporter(val manager: AssemblyManager) extends LazyLogging {
   def precededBy(eer: EntityEventRepresentation): Set[String] = eer match {
     case entity: Entity => Set.empty[String]
     case event: Event =>
-      event.predecessors(ignoreMods = false).map(se => EERLUT(se.equivalenceHash(ignoreMods = false)))
+      event.predecessors.map(se => EERLUT(se.equivalenceHash(ignoreMods = false)))
   }
 
   def writeRows(
