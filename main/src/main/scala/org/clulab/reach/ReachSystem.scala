@@ -45,7 +45,6 @@ class ReachSystem(
   val eventEngine = ExtractorEngine(eventRules, actions, actions.cleanupEvents)
   // initialize processor
   val processor = if (proc.isEmpty) new BioNLPProcessor(withChunks = false) else proc.get
-  processor.annotate("something")
 
   /** returns string with all rules used by the system */
   def allRules: String =

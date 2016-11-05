@@ -248,6 +248,28 @@ rules:
       before:Event = (?<= [lemma=when] []*? ",") @Event
       after:Event = [mention=Event]*? [lemma=then & mention=Event] [mention=Event]+
 
+  - name: cross-sentence-discourse-clue-11a
+    label: Precedence
+    priority: ${mypriority}
+    type: "cross-sentence"
+    right-window: 1
+    #action: ${myaction}
+    example: "BEF was phosphorylated. Then, AFT was ubiquitinated."
+    pattern: |
+      before:Event = @Event
+      after:Event = (?<= ^ [lemma=/(?i)^(then|finally|subsequently)$/] ","?) @Event
+
+  - name: cross-sentence-discourse-clue-12a
+    label: Precedence
+    priority: ${mypriority}
+    type: "cross-sentence"
+    left-window: 1
+    #action: ${myaction}
+    example: "AFT was ubiquitinated. Prior to this, BEF was phosphorylated."
+    pattern: |
+      before:Event = (?<= ^ [lemma=/(?i)^(prior|previously)$/] (to this)? ","?) @Event
+      after:Event = @Event
+
 #[word=/(?i)mediated$/]
 
 #  - name: cross-sentence-these-interactions

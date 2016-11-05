@@ -1,7 +1,7 @@
 name := "reach-main"
 
 libraryDependencies ++= {
-  val processorsVersion = "6.0.1-SNAPSHOT"
+  val processorsVersion = "6.0.2-SNAPSHOT"
   val luceneVersion = "5.3.1"
   Seq(
     "org.scalatest" %% "scalatest" % "2.2.4" % "test",

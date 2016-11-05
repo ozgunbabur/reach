@@ -4,6 +4,8 @@ import io.Source
 import org.clulab.reach.mentions._
 import org.clulab.odin._
 import org.clulab.processors.Document
+import org.clulab.serialization.json.JSONSerializer
+import org.json4s.native.JsonMethods._
 import scala.util.Try
 import ai.lum.nxmlreader.{NxmlDocument, NxmlReader}
 import org.clulab.reach.utils.MentionManager
@@ -63,6 +65,8 @@ object TestUtils {
   val mentionManager = new MentionManager()
 
   def getMentionsFromText(text: String): Seq[Mention] = PaperReader.getMentionsFromText(text)
+
+  def getMentionsFromDocument(doc: Document): Seq[Mention] = testReach.extractFrom(doc)
 
   def getBioMentionsFromText(text: String): Seq[BioMention] = for {
     m <- getMentionsFromText(text)
@@ -289,4 +293,6 @@ object TestUtils {
 
     def countMutations: Int = mention.modifications.count(_.isInstanceOf[Mutant])
   }
+
+  def jsonStringToDocument(jsonstr: String): Document = JSONSerializer.toDocument(parse(jsonstr))
 }
