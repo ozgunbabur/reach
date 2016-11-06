@@ -3,8 +3,6 @@ package org.clulab.reach.assembly.relations.corpus
 import org.clulab.processors.Document
 import org.clulab.reach.assembly.relations.classifier.AssemblyRelationClassifier
 import org.clulab.reach.assembly.sieves.Constraints
-import ai.lum.common.FileUtils._
-import org.apache.commons.lang.CharEncoding
 import org.clulab.reach.mentions.CorefMention
 import org.clulab.reach.mentions.serialization.json.{MentionJSONOps, REACHMentionSeq, JSONSerializer}
 import org.clulab.serialization.json.JSONSerialization
@@ -14,6 +12,7 @@ import org.json4s._
 import scala.util.hashing.MurmurHash3._
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.FileUtils.forceMkdir
+import ai.lum.common.FileUtils._
 import java.io.File
 
 
@@ -156,11 +155,11 @@ case class Corpus(instances: Seq[EventPair]) extends JSONSerialization {
     // for each doc, write doc + mentions to a json file
     for ((paperID, cms) <- dmLUT) {
       val of = new File(mentionDataDir, s"$paperID-mention-data.json")
-      of.writeString(cms.json(pretty), CharEncoding.UTF_8)
+      of.writeString(cms.json(pretty), java.nio.charset.StandardCharsets.UTF_8)
     }
     // write event pair info to json file
     val epf = new File(corpusDir, s"${Corpus.EVENT_PAIRS}.json")
-    epf.writeString(this.json(pretty), CharEncoding.UTF_8)
+    epf.writeString(this.json(pretty), java.nio.charset.StandardCharsets.UTF_8)
   }
 }
 

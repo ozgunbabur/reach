@@ -5,7 +5,7 @@ libraryDependencies ++= {
   val luceneVersion = "5.3.1"
   Seq(
     "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-    "org.clulab" % "bioresources" % "1.1.17",
+    "org.clulab" % "bioresources" % "1.1.18",
     "org.clulab" %% "processors-main" % processorsVersion,
     "org.clulab" %% "processors-corenlp" % processorsVersion,
     "org.clulab" %% "processors-models" % processorsVersion,
