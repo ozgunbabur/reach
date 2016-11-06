@@ -139,8 +139,14 @@ object CorpusBuilder {
     val am = AssemblyManager(eps.flatMap(ep => Seq(ep.e1, ep.e2)))
     def countEquivalentEPs(ep: EventPair): Int = {
       eps.count{ other =>
-          am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e1), ignoreMods = true) &&
+        // relaxed equivalence (modifications may differ)
+        ( am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e1), ignoreMods = true) &&
           am.getEER(other.e2).isEquivalentTo(am.getEER(ep.e2), ignoreMods = true)
+        ) ||
+        // an equivalent pair may not necessarily appear in the same order
+        ( am.getEER(other.e1).isEquivalentTo(am.getEER(ep.e2), ignoreMods = true) &&
+          am.getEER(other.e2).isEquivalentTo(am.getEER(ep.e1), ignoreMods = true)
+        )
       }
     }
 
@@ -207,7 +213,7 @@ object BuildCorpusWithRedundancies extends App with LazyLogging {
     f <- jsonFiles
     cms = ReachJSONSerializer.toCorefMentions(f)
     paperID = getPMID(cms.head)
-    _ = logger.info(s"Deserialized ${cms.size} mentions for $paperID")
+    //_ = logger.info(s"Deserialized ${cms.size} mentions for $paperID")
     // should this paper be skipped?
     if ! skip.contains(paperID)
     candiateEPs = selectEventPairs(cms)
