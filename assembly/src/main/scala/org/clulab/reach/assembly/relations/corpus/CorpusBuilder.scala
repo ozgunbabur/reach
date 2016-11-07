@@ -25,7 +25,7 @@ import scala.collection.parallel.ForkJoinTaskSupport
 /**
   * Utility functions for building the assembly relation corpus
   */
-object CorpusBuilder {
+object CorpusBuilder extends LazyLogging {
 
   val config = ConfigFactory.load()
   val kWindow = config.getInt("assembly.windowSize")
@@ -108,6 +108,9 @@ object CorpusBuilder {
       m2 <- candidates
       // the mentions should be distinct
       if m1 != m2
+      // are these events of interest?
+      if validLabels.exists(label => m1 matches label)
+      if validLabels.exists(label => m2 matches label)
       // the mentions must be within the acceptable sentential window
       if Constraints.withinWindow(m1, m2, kWindow)
       // check if mention pair meets corpus constraints
@@ -198,36 +201,48 @@ object BuildCorpusWithRedundancies extends App with LazyLogging {
   val skip: Set[String] = config[List[String]]("assembly.corpus.constraints.skip").toSet
   val minSeen = config[Int]("assembly.corpus.constraints.minSeen")
 
-  val jsonFiles = new File(config.getString("assembly.corpus.jsonDir")).listFiles.par
+  val jsonFiles: Seq[File] = new File(config.getString("assembly.corpus.jsonDir")).listFiles.toSeq
+
+  import ai.lum.common.RandomUtils._
+
+  val random = RandomWrapper(new java.util.Random(42L))
+
+  val sampleSize = 1000
+
   val threadLimit: Int = config[Int]("threadLimit")
 
   logger.info(s"skipping ${skip.size} files")
   logger.info(s"minSeen:\t$minSeen")
   logger.info(s"Using $threadLimit threads")
-  jsonFiles.tasksupport =
-    new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(threadLimit))
+  logger.info(s"Valid labels: $validLabels")
+  logger.info(s"Sample size: $sampleSize")
 
+
+  val sampledFiles = random.sampleWithoutReplacement[File, Seq](jsonFiles, sampleSize).par
   // prepare corpus
   logger.info(s"Loading dataset ...")
-  val eps = for {
-    f <- jsonFiles
-    cms = ReachJSONSerializer.toCorefMentions(f)
-    paperID = getPMID(cms.head)
-    //_ = logger.info(s"Deserialized ${cms.size} mentions for $paperID")
+
+  sampledFiles.tasksupport =
+    new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(threadLimit))
+
+  val eps: Seq[EventPair] = sampledFiles.flatMap{ f =>
+    val cms = ReachJSONSerializer.toCorefMentions(f)
+    val paperID = getPMID(cms.head)
     // should this paper be skipped?
-    if ! skip.contains(paperID)
-    candiateEPs = selectEventPairs(cms)
-    _ = logger.info(s"Found ${candiateEPs.size} candidate EPs for $paperID")
-    validPairs = findRedundantEPs(candiateEPs, minSeen)
-    if validPairs.nonEmpty
-    _ = logger.info(s"Found ${validPairs.size} valid pairs in $paperID")
-    ep <- validPairs
-  } yield ep
+    skip.contains(paperID) match {
+      case false =>
+        val candidateEPs = selectEventPairs(cms)
+        val validPairs = findRedundantEPs(candidateEPs, minSeen)
+        if (validPairs.nonEmpty) logger.info(s"Found ${validPairs.size} valid pairs in $paperID")
+        validPairs
+      case true => Nil
+    }
+  }.seq
 
   logger.info(s"Found ${eps.size} examples for relation corpus ...")
 
   val outDir: File = config[File]("assembly.corpus.corpusDir")
   // create corpus and write to file
-  val corpus = Corpus(eps.seq)
+  val corpus = Corpus(eps)
   corpus.writeJSON(outDir, pretty = false)
 }
