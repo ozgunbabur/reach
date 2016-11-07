@@ -40,12 +40,12 @@ trait JsonOutputter {
     * The output filename prefix is provided for use by the generator routines, as needed.
     */
   def toJSON (
-      paperId: String,
-      allMentions: Seq[Mention],
-      nxmldoc: NxmlDocument,
-      startTime: Date,
-      endTime: Date,
-      outFilePrefix: String
+    paperId: String,
+    allMentions: Seq[Mention],
+    nxmldoc: NxmlDocument,
+    startTime: Date,
+    endTime: Date,
+    outFilePrefix: String
   ): String = {
     toJSON(paperId, allMentions, nxmlToEntries(nxmldoc), startTime, endTime, outFilePrefix)
   }
