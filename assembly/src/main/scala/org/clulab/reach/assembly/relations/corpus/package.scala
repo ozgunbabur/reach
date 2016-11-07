@@ -2,7 +2,7 @@ package org.clulab.reach.assembly.relations
 
 import org.clulab.odin.Mention
 import org.clulab.reach.assembly.sieves.SieveUtils
-import org.clulab.reach.mentions.serialization.json.{CorefMentionOps, JSONSerializer}
+import org.clulab.reach.serialization.json.{CorefMentionOps, JSONSerializer}
 import org.clulab.reach.mentions._
 import com.typesafe.scalalogging.LazyLogging
 import scala.collection.GenSeq

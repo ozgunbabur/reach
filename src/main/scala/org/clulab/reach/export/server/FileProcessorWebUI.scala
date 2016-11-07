@@ -13,7 +13,7 @@ import java.io.{File, FileOutputStream}
 import com.typesafe.config.{Config, ConfigValueFactory}
 import org.clulab.reach.assembly.server._
 import org.clulab.reach.mentions._
-import org.clulab.reach.mentions.serialization.json._
+import org.clulab.reach.serialization.json._
 import org.clulab.reach.PaperReader
 import org.clulab.reach.export.arizona.ArizonaOutputter
 import org.json4s.{DefaultFormats, native}

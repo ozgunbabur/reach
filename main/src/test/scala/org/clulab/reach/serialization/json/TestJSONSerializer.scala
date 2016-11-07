@@ -1,9 +1,9 @@
-package org.clulab.reach.mentions.serialization
+package org.clulab.reach.serialization.json
 
 import org.scalatest._
 import org.clulab.reach.TestUtils._
 import org.clulab.reach.mentions.{MentionOps => MOps}
-import org.clulab.reach.mentions.serialization.json._
+import org.clulab.reach.serialization.json._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 

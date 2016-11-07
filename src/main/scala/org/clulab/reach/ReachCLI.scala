@@ -15,7 +15,7 @@ import org.clulab.reach.export.fries._
 import org.clulab.reach.export.indexcards.IndexCardOutput
 import org.clulab.reach.utils.MentionManager
 import org.clulab.reach.mentions._
-import org.clulab.reach.mentions.serialization.json._
+import org.clulab.reach.serialization.json._
 import java.io.File
 import java.util.Date
 

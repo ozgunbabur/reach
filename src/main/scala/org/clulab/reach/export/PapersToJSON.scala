@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.FileUtils
 import org.clulab.reach.PaperReader
-import org.clulab.reach.mentions.serialization.json._
+import org.clulab.reach.serialization.json._
 import scala.collection.parallel.ForkJoinTaskSupport
 import java.io.File
 

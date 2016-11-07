@@ -10,7 +10,7 @@ import collection.JavaConversions._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import java.io.File
-import org.clulab.reach.mentions.serialization.json.{ JSONSerializer => ReachJSONSerializer }
+import org.clulab.reach.serialization.json.{ JSONSerializer => ReachJSONSerializer }
 import scala.collection.parallel.ForkJoinTaskSupport
 
 

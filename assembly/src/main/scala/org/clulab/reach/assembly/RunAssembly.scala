@@ -125,7 +125,7 @@ object RunAnnotationEval extends App with LazyLogging {
   */
 object SerializePapersToJSON extends App with LazyLogging {
 
-  import org.clulab.reach.mentions.serialization.json._
+  import org.clulab.reach.serialization.json._
 
   val config = ConfigFactory.load()
   val papersDir = new File(config.getString("papersDir"))

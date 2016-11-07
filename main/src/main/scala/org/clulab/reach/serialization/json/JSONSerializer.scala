@@ -1,4 +1,4 @@
-package org.clulab.reach.mentions.serialization.json
+package org.clulab.reach.serialization.json
 
 import org.clulab.serialization.json.DocOps
 import org.clulab.serialization.json.JSONSerializer._
@@ -47,6 +47,29 @@ object JSONSerializer extends LazyLogging {
   }
 
   def jsonAST(f: File): JValue = parse(scala.io.Source.fromFile(f).getLines.mkString)
+
+  /** Produce a sequence of mentions from a json file */
+  def toMentions(file: File): Seq[Mention] = toMentions(jsonAST(file))
+
+  /** Produce a Seq[Mention] from json */
+  def toMentions(json: JValue): Seq[Mention] = {
+
+    require(json \ "documents" != JNothing, "\"documents\" key missing from json")
+    require(json \ "mentions" != JNothing, "\"mentions\" key missing from json")
+
+    // build the documents once
+    val docMap = mkDocumentMap(json \ "documents")
+    val mmjson = (json \ "mentions").asInstanceOf[JArray]
+
+    mmjson.arr.flatMap(mjson => toMention(mjson, docMap))
+  }
+
+  /** Build mention from json of mention and corresponding json map of documents <br>
+    * Since a single Document can be quite large and may be shared by multiple mentions,
+    * only a reference to the document json is contained within each mention.
+    * A map from doc reference to document json is used to avoid redundancies and reduce file size during serialization.
+    * */
+  def toMention(mjson: JValue, docMap: Map[String, Document]): Option[Mention] = toMentionByType(mjson, docMap)
 
   /** Produce a sequence of mentions from a json file */
   def toBioMentions(file: File): Seq[BioMention] = toBioMentions(jsonAST(file))
@@ -395,9 +418,12 @@ object JSONSerializer extends LazyLogging {
     case JString(BioEventMention.string) => Some(toBioMention(mjson, docMap))
     case JString(BioRelationMention.string) => Some(toBioMention(mjson, docMap))
     // Mentions
-    case JString(org.clulab.serialization.json.TextBoundMention.string) => Some(toMention(mjson, docMap))
-    case JString(org.clulab.serialization.json.EventMention.string) => Some(toMention(mjson, docMap))
-    case JString(org.clulab.serialization.json.RelationMention.string) => Some(toMention(mjson, docMap))
+    case JString(org.clulab.serialization.json.TextBoundMention.string) =>
+      Some(org.clulab.serialization.json.JSONSerializer.toMention(mjson, docMap))
+    case JString(org.clulab.serialization.json.EventMention.string) =>
+      Some(org.clulab.serialization.json.JSONSerializer.toMention(mjson, docMap))
+    case JString(org.clulab.serialization.json.RelationMention.string) =>
+      Some(org.clulab.serialization.json.JSONSerializer.toMention(mjson, docMap))
     // failure
     case _ => None
   }

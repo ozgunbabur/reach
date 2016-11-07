@@ -1,10 +1,10 @@
-package org.clulab.reach.mentions.serialization
+package org.clulab.reach.serialization
 
 import org.clulab.odin
 import org.clulab.odin._
 import org.clulab.serialization.json.{ TextBoundMentionOps, RelationMentionOps, EventMentionOps }
 import org.clulab.serialization.json.{ MentionOps => OdinMentionOps, JSONSerialization, OdinPathOps }
-import org.clulab.reach.mentions.serialization.json.{ JSONSerializer => ReachJSONSerializer }
+import org.clulab.reach.serialization.json.{ JSONSerializer => ReachJSONSerializer }
 import org.clulab.reach.mentions._
 import org.clulab.reach.grounding.KBResolution
 import java.nio.charset.StandardCharsets
