@@ -85,8 +85,8 @@ case class EventPair(
     // event 2
     ("e2-id" -> this.e2.id) ~
     ("e2-label" -> this.e2.eventLabel) ~
-    ("e2-sentence-text" -> this.e2.text) ~
-    ("e2-sentence-index" -> this.e2.sentence) ~
+    ("e2-sentence-text" -> this.e2.sentenceText) ~
+    ("e2-sentence-index" -> this.e2.sentence) ~ 
     ("e2-sentence-tokens" -> this.e2.sentenceObj.words.toList) ~
     // can be used to highlight event span in annotation UI
     ("e2-start" -> this.e2.start) ~
