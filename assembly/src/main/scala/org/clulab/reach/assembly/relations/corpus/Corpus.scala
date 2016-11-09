@@ -86,7 +86,7 @@ case class EventPair(
     ("e2-id" -> this.e2.id) ~
     ("e2-label" -> this.e2.eventLabel) ~
     ("e2-sentence-text" -> this.e2.sentenceText) ~
-    ("e2-sentence-index" -> this.e2.sentence) ~ 
+    ("e2-sentence-index" -> this.e2.sentence) ~
     ("e2-sentence-tokens" -> this.e2.sentenceObj.words.toList) ~
     // can be used to highlight event span in annotation UI
     ("e2-start" -> this.e2.start) ~
@@ -95,14 +95,14 @@ case class EventPair(
     ("e2-trigger-start" -> this.e2.trigger.start) ~
     ("e2-trigger-end" -> this.e2.trigger.end) ~
     // these will be filled out during annotation
-    ("annotator-id" -> "") ~
+    ("annotator-id" -> this.annotatorID) ~
     ("relation" -> this.relation) ~
     ("confidence" -> confidence) ~
     // additional features
     ("cross-sentence" -> this.isCrossSentence) ~
     ("paper-id" -> this.pmid) ~
     // annotation notes
-    ("notes" -> "")
+    ("notes" -> this.notes.getOrElse(""))
   }
 }
 
