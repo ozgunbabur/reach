@@ -6,7 +6,8 @@ import org.clulab.odin._
 import org.clulab.reach.assembly.{AssemblyManager, PrecedenceRelation}
 import org.clulab.reach.assembly.sieves._
 import SieveUtils._
-import org.apache.commons.io.FileUtils
+import ai.lum.common.FileUtils._
+import com.typesafe.scalalogging.LazyLogging
 import java.io.File
 
 
@@ -136,7 +137,9 @@ object SieveEvaluator {
       }
     }.mkString("\n")
 
-    s"""# CROSS-SENTENCE:\t$crossSentenceCount
+    s"""TOTAL:\t${pr.size}
+       |-------------------------------------
+       |# CROSS-SENTENCE:\t$crossSentenceCount
        |# INTRASENTENCE:\t${pr.size - crossSentenceCount}
        |
        |$eventPairs
@@ -165,9 +168,10 @@ object SieveEvaluator {
       // for the whole sieve
       val sievePerformance = Performance(lbl, "**ALL**", p, r, f1, tp.size, fp.size, fn.size)
 
-      // write false positives and false negatives to files
-      FileUtils.writeStringToFile(new File(s"false-positives-${fp.size}.txt"), summarizePrecedenceRelations(fp.toSeq))
-      FileUtils.writeStringToFile(new File(s"false-negatives-${fn.size}.txt"), summarizePrecedenceRelations(fn))
+      // write true positives, false positives, and false negatives to files
+      new File(s"true-positives.txt").writeString(summarizePrecedenceRelations(tp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
+      new File(s"false-positives.txt").writeString(summarizePrecedenceRelations(fp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
+      new File(s"false-negatives.txt").writeString(summarizePrecedenceRelations(fn), java.nio.charset.StandardCharsets.UTF_8)
 
       val rulePerformance: Seq[Performance] = {
         val rulePs = predicted.groupBy(pr => (pr.foundBy, pr.evidence.head.foundBy))
@@ -213,13 +217,16 @@ object SieveEvaluator {
   }
 }
 
-object RunRBSieveEval extends App {
+object RunRBSieveEval extends App with LazyLogging {
 
   import SieveEvaluator._
+  import ai.lum.common.ConfigUtils._
 
-  val corpusDir = "/Users/gus/repos/reach-resources/wip"
+  val config = ConfigFactory.load()
+  val corpusDir: String = config[String]("assembly.corpus.corpusDir")
+  logger.info(s"Reading corpus from $corpusDir")
   val corpus = Corpus(corpusDir)
-
+  logger.info("Applying sieves")
   val sieveResults = SieveEvaluator.applyEachSieve(corpus.mentions)
   val preformanceForEachSieve = SieveEvaluator.evaluateSieves(corpus.precedenceRelations, sieveResults)
 
