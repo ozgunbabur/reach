@@ -14,6 +14,21 @@ object Constraints {
   val beforeRole = "before"
   val afterRole = "after"
 
+  def isNegated(m: Mention): Boolean = {
+    val am = AssemblyManager(Seq(m))
+    am.getEER(m).negated
+  }
+
+  def hasMultipleInputs(m: Mention): Boolean = {
+    val am = AssemblyManager(Seq(m))
+    val input = am.getEER(m) match {
+      case event: Event => event.I
+      case complex: Complex => complex.members
+      case entity: Entity => Set(entity)
+    }
+    input.size > 1
+  }
+
   // For a complex event "C", with a controlled "A", do not re-create "A precedes C"
   def notAnExistingComplexEvent(link: Mention):Boolean = {
     val before = link.arguments(beforeRole).head
@@ -28,7 +43,7 @@ object Constraints {
   def noExistingPrecedence(
     x: Mention,
     y: Mention,
-    am:AssemblyManager,
+    am: AssemblyManager,
     // strict matching is the default
     ignoreMods: Boolean = false): Boolean = {
     noExistingPrecedence(am.getEER(x), am.getEER(y), ignoreMods)

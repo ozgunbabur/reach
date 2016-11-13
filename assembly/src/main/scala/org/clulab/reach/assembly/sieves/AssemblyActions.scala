@@ -31,6 +31,9 @@ class AssemblyActions extends Actions with LazyLogging {
       if m.arguments contains AFTER
       b <- m.arguments(BEFORE)
       a <- m.arguments(AFTER)
+      // neither reaction should be negated
+      if !Constraints.isNegated(b)
+      if !Constraints.isNegated(a)
       // "a" should not be strictly equivalent to "b"
       if !Constraints.areEquivalent(b, a, ignoreMods = false)
       if Constraints.shareEntityGrounding(b, a)
@@ -47,8 +50,8 @@ class AssemblyActions extends Actions with LazyLogging {
     m <- validatePrecedenceRelations(mentions, state)
     b <- m.arguments(BEFORE)
     a <- m.arguments(AFTER)
-    // FIXME: should ignoreMods be false?
-    if Constraints.shareControlleds(b, a, ignoreMods = false)
+    if Constraints.shareControlleds(b, a, ignoreMods = true)
+    if ! Constraints.areEquivalent(b, a, ignoreMods = true)
   } yield mkPrecedenceMention(parent = m, before = b, after = a)
 
   def expandArgs(mentions: Seq[Mention], state: State): Seq[Mention] = {
