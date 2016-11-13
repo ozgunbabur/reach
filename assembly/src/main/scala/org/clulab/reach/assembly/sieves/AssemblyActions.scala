@@ -14,6 +14,15 @@ class AssemblyActions extends Actions with LazyLogging {
 
   def identityAction(mentions: Seq[Mention], state: State): Seq[Mention] = mentions
 
+  def bindingFilter(mentions: Seq[Mention], state: State): Seq[Mention] = for {
+    m <- validatePrecedenceRelations(mentions, state)
+    b <- m.arguments(BEFORE)
+    a <- m.arguments(AFTER)
+    // binding must involve more than one distinct participant
+    if Constraints.hasMultipleInputs(b)
+    if Constraints.hasMultipleInputs(a)
+  } yield mkPrecedenceMention(parent = m, before = b, after = a)
+
   def validatePrecedenceRelations(mentions: Seq[Mention], state: State): Seq[Mention] = {
 
     val validCandidates = for {
