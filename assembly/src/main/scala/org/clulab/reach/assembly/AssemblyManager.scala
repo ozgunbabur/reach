@@ -561,7 +561,7 @@ class AssemblyManager(
     // however, when createSimpleEvent calls this method to construct an output representation,
     // it gives it the PTMs to associate with this mention
     // TODO: should this use m or e?
-    val id = if (mods.nonEmpty) createID else getOrCreateID(e)
+    val id = if (mods.nonEmpty) createID else getOrCreateID(m)
 
     // only use if mods are nonEmpty
     // use resolved form
