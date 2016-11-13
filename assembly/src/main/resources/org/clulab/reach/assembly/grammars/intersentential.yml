@@ -11,20 +11,12 @@ vars:
   after_type: "Event"
   before_type: "Event"
   # TODO: fix comparison of binding args to ComplexEvent controlleds
-  myaction: "identityAction" #"validatePrecedenceRelations" #"identityAction"
+  myaction: "validatePrecedenceRelations" #"identityAction"
   regverbaltrigger: [lemma=/^(promote)/]
-
-# rules for assembly sieve
-
-  ########################
-  #
-  # intra-sentence cases
-  #
-  ########################
 
 rules:
   # precedence markers
-  - import: org/clulab/reach/assembly/grammars/precedence-markers.yml
+  #- import: org/clulab/reach/assembly/grammars/precedence-markers.yml
 
   ########################
   #
@@ -32,16 +24,17 @@ rules:
   #
   ########################
 
-  - name: cross-sentence-binding-binding
-    label: Precedence
-    priority: ${mypriority}
-    type: "cross-sentence"
-    right-window: 1
-    action: ${myaction}
-    example: "The first of these is the binding of Cdc25 to the GDP bound wt Ras to produce the ternary wt Ras-GDP-Cdc25 complex .  The formation of the ternary complex disrupts the binding interaction between wt Ras and GDP , resulting in release of the bound GDP to produce the wt Ras Cdc25 binary complex .  The second step is the binding of the cellularly abundant GTP to the wt Ras complexed with Cdc25 ; this binding expels the bound Cdc25 from wt Ras to produce GTP bound wt Ras ."
-    pattern: |
-      before:Binding = @Binding
-      after:Binding = (?<= @PrecedenceMarker? []*) @Binding
+# FIXME: this is far too permissive
+#  - name: cross-sentence-binding-binding
+#    label: Precedence
+#    priority: ${mypriority}
+#    type: "cross-sentence"
+#    right-window: 1
+#    action: bindingFilter
+#    example: "The first of these is the binding of Cdc25 to the GDP bound wt Ras to produce the ternary wt Ras-GDP-Cdc25 complex .  The formation of the ternary complex disrupts the binding interaction between wt Ras and GDP , resulting in release of the bound GDP to produce the wt Ras Cdc25 binary complex .  The second step is the binding of the cellularly abundant GTP to the wt Ras complexed with Cdc25 ; this binding expels the bound Cdc25 from wt Ras to produce GTP bound wt Ras ."
+#    pattern: |
+#      before:Binding = @Binding
+#      after:Binding = (?<= @PrecedenceMarker? []*) @Binding
 
 #  - name: cross-sentence-activated-1
 #    label: Precedence
@@ -66,16 +59,17 @@ rules:
       # activated CONTROLLER ...
       after:ComplexEvent = (?<= [lemma=/activate/]) [mention=ComplexEvent.controller]+ [mention=ComplexEvent]+
 
-  - name: cross-sentence-shared-controlleds
-    label: Precedence
-    priority: ${mypriority}
-    type: "cross-sentence"
-    right-window: 1
-    action: shareControlleds
-    example: "GSK-3beta can then phosphorylate beta-catenin on S33 , S37 and T41 .  The Axin and GSK -3 / CK1 and APC complex induces the degradation of beta-catenin ."
-    pattern: |
-      before:ComplexEvent = @ComplexEvent
-      after:ComplexEvent = @ComplexEvent
+# FIXME: this is far too permissive
+#  - name: cross-sentence-shared-controlleds
+#    label: Precedence
+#    priority: ${mypriority}
+#    type: "cross-sentence"
+#    right-window: 1
+#    action: shareControlleds
+#    example: "GSK-3beta can then phosphorylate beta-catenin on S33 , S37 and T41 .  The Axin and GSK -3 / CK1 and APC complex induces the degradation of beta-catenin ."
+#    pattern: |
+#      before:ComplexEvent = @ComplexEvent
+#      after:ComplexEvent = @ComplexEvent
 
   # FIXME: modify Constraints.sharedControlleds to allow comparisons to SimpleEvents (using themes)
   - name: cross-sentence-complex-event-then-binding
@@ -115,7 +109,7 @@ rules:
 #      before:Event = @Event
 #      after:Event = @Event
 
-  - name: cross-sentence-coref-clue-1
+  - name: cross-sentence-binding-coref-this-event
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -126,7 +120,7 @@ rules:
       before:Binding = @Binding
       after:Event = (?<= [lemma=/^(this|these)$/]) [mention=Event]+
 
-  - name: cross-sentence-coref-clue-2
+  - name: cross-sentence-event-coref-this-event
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -137,7 +131,7 @@ rules:
       before:Event = @Event
       after:Event = (?<= [lemma=/^(this|these|its)$/]) [mention=Event]+
 
-  - name: cross-sentence-discourse-clue-1
+  - name: cross-sentence-next-step
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -146,7 +140,7 @@ rules:
     example: "The formation of the ternary complex disrupts the binding interaction between wt Ras and GDP , resulting in release of the bound GDP to produce the wt Ras Cdc25 binary complex .  The second step is the binding of the cellularly abundant GTP to the wt Ras complexed with Cdc25 ; this binding expels the bound Cdc25 from wt Ras to produce GTP bound wt Ras ."
     pattern: |
       before:Event = @Event
-      after:Event = (?<= @PrecedenceMarker []*?) [mention=Event]+
+      after:Event = (?<= [tag=DT] [!lemma=/^(first|initial)$/] step []*) [mention=Event]+
 
 
 #  - name: cross-sentence-discourse-clue-2
@@ -172,7 +166,7 @@ rules:
 #      before:Event = @Event
 #      after:Event = (?<= which "then"? (in turn)?) @Event
 
-  - name: cross-sentence-discourse-clue-4
+  - name: cross-sentence-induce
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -183,7 +177,7 @@ rules:
       before:Event = @Event
       after:Event = [mention=Event]*? [word=/(?i)^induces$/ & mention=Event] [mention=Event]+
 
-  - name: cross-sentence-discourse-clue-5
+  - name: cross-sentence-comma-which
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -194,7 +188,7 @@ rules:
       before:Event = @Event
       after:Event = @Event (?= "," which)
 
-  - name: cross-sentence-discourse-clue-6
+  - name: cross-sentence-in-order-to
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -205,7 +199,7 @@ rules:
       before:Event = @Event
       after:Event = (?<= ^([lemma=in] [lemma=order])? [lemma=to] [tag=/^V/] []*? ",") @Event
 
-  - name: cross-sentence-discourse-clue-7
+  - name: cross-sentence-where-it
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -216,7 +210,7 @@ rules:
       before:Event = @Event
       after:Event = (?<= ","? where) [lemma=it] [mention=Event]+
 
-  - name: cross-sentence-discourse-clue-8
+  - name: cross-sentence-when-x
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -227,7 +221,7 @@ rules:
       before:Event = @Event
       after:Event = (?<= [lemma=when] []*? ",") @Event
 
-  - name: cross-sentence-discourse-clue-9
+  - name: cross-sentence-when-comma-x-after-y
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -238,7 +232,7 @@ rules:
       before:Event = (?<= [lemma=when] []*? ",") @Event
       after:Event = (?<= [lemma=after] []*?) @Event
 
-  - name: cross-sentence-discourse-clue-10
+  - name: cross-sentence-discourse-when-x-then-y
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -248,7 +242,7 @@ rules:
       before:Event = (?<= [lemma=when] []*? ",") @Event
       after:Event = [mention=Event]*? [lemma=then & mention=Event] [mention=Event]+
 
-  - name: cross-sentence-discourse-clue-11a
+  - name: cross-sentence-discourse-then-finally
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
@@ -259,7 +253,7 @@ rules:
       before:Event = @Event
       after:Event = (?<= ^ [lemma=/(?i)^(then|finally|subsequently)$/] ","?) @Event
 
-  - name: cross-sentence-discourse-clue-12a
+  - name: cross-sentence-discourse-previously
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
