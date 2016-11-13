@@ -188,11 +188,11 @@ class AssemblyManager(
   }
 
   /**
-    * Retrieves the (distinct) Set of PrecedenceRelations for all Events
+    * Retrieves the set of PrecedenceRelations for all Events
     */
   def getPrecedenceRelations: Set[PrecedenceRelation] = {
     for {
-      e <- distinctEvents
+      e <- getEvents
       pr <- getPrecedenceRelationsFor(e)
     } yield pr
   }
