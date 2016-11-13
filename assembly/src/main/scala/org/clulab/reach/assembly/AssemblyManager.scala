@@ -1242,14 +1242,7 @@ class AssemblyManager(
     * @param m an Odin Mention
     * @return an [[EntityEventRepresentation]]
     */
-  def getEER(m: Mention): EER = {
-    require(isValidMention(m), s"Mention '${m.label}' is not valid")
-    val k1 = getMentionState(m)
-    // backoff: attempt to use resolved form
-    val k2 = getMentionState(getResolvedForm(m))
-    val id = mentionStateToID.getOrElse(k1, mentionStateToID(k2))
-    idToEER(id)
-  }
+  def getEER(m: Mention): EER = getOrCreateEER(m)
 
   /**
     * Retrieves an [[EntityEventRepresentation]] associated with the given [[IDPointer]].
