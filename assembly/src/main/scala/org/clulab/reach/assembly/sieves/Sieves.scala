@@ -71,7 +71,7 @@ class PrecedenceSieves extends Sieves {
       a = after.head
       // cannot be an existing regulation
       //if notAnExistingComplexEvent(rel)
-      if noExistingPrecedence(a, b, manager)
+      //if noExistingPrecedence(a, b, manager)
     } {
       // store the precedence relation
       // TODO: add score
