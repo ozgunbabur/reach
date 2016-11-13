@@ -155,10 +155,11 @@ object SieveEvaluator {
     } yield {
       val predicted = sieveResult.getPrecedenceRelations
       val smoothing = 0.00001
+      val im = false
       // get the sets of PrecedenceRelations corresponding to tp, fp, and fn
-      val tp = predicted.filter(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = false)))
-      val fp = predicted.filter(p => ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = false)))
-      val fn = posGold.filter(g => ! predicted.exists(p => p.isEquivalentTo(g, ignoreMods = false)))
+      val tp = predicted.filter(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = im)))
+      val fp = predicted.filter(p => ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = im)))
+      val fn = posGold.filter(g => ! predicted.exists(p => p.isEquivalentTo(g, ignoreMods = im)))
 
       // micro performance
       val p = tp.size / (tp.size + fp.size + smoothing)
@@ -175,9 +176,9 @@ object SieveEvaluator {
 
       val rulePerformance: Seq[Performance] = {
         val rulePs = predicted.groupBy(pr => (pr.foundBy, pr.evidence.head.foundBy))
-        val allRtp = rulePs.mapValues(_.count(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = false))))
+        val allRtp = rulePs.mapValues(_.count(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = im))))
         val allRfp = rulePs.mapValues{_.count{p =>
-          val isFP = ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = false))
+          val isFP = ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = im))
           //if(isFP) displayMention(p.evidence.head)
           isFP
         }
@@ -185,7 +186,7 @@ object SieveEvaluator {
         val allRfn = {
           val res = for {
             (foundBy, group) <- rulePs
-            gold = posGold.count(g => ! group.exists(p => p.isEquivalentTo(g, ignoreMods = false)))
+            gold = posGold.count(g => ! group.exists(p => p.isEquivalentTo(g, ignoreMods = im)))
           } yield (foundBy, gold)
           res
         }
