@@ -293,9 +293,12 @@ class AssemblyManager(
     * See [[isValidMention]] for details on validation check
     * @param m an Odin Mention
     */
-  def trackMention(m: Mention): Unit = {
+  def trackMention(m: Mention): Unit = isValidMention(m) match {
     // do not store Sites, Activations, etc. in LUT 1
-    if (isValidMention(m)) getOrCreateEER(m)
+    case true =>
+      // get or create an EntityEventRepresentation
+      val _ = getOrCreateEER(m)
+    case false => ()
   }
 
   /**
@@ -303,12 +306,7 @@ class AssemblyManager(
     * See [[isValidMention]] for details on validation check
     * @param mentions a sequence of Mention to store in the AssemblyManager LUTs
     */
-  def trackMentions(mentions: Seq[Mention]): Unit = {
-    // do not store Sites, Activations, etc. in LUT 1
-    mentions.filter(isValidMention)
-      // get or create an EntityEventRepresentation for each mention
-      .map(getOrCreateEER)
-  }
+  def trackMentions(mentions: Seq[Mention]): Unit = mentions.foreach(trackMention)
 
   /**
     * Gets the polarity of a mention.  Should only be relevant to ComplexEvents
@@ -1259,8 +1257,7 @@ class AssemblyManager(
     * @param id an [[IDPointer]]
     * @return an [[EntityEventRepresentation]]
     */
-  def getEER(id: IDPointer): EER =
-    idToEER(id)
+  def getEER(id: IDPointer): EER = idToEER(id)
 
   /**
     * Retrieves the Set of [[EntityEventRepresentation]] tracked by the manager.
