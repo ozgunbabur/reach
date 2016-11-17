@@ -78,6 +78,7 @@
                       - GENE
 # a preliminary taxonomy for assembly (precedence relations)
 - Precedence:
+    - CausalTrigger
     - PrecedenceMarker
     # for pairs that are directly (immediately) connected
     # difficult to know from odin rules alone, but not impossible
