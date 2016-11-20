@@ -121,8 +121,8 @@ object AssemblyActions {
 
       case false =>
         s"""found-by:\t${mention.foundBy}
-            |s1:\t'${before.sentenceObj.getSentenceText}'
-            |s2:\t'${after.sentenceObj.getSentenceText}'
+            |s1:\t'${Seq(before, after).minBy(_.sentence).sentenceObj.getSentenceText}'
+            |s2:\t'${Seq(before, after).maxBy(_.sentence).sentenceObj.getSentenceText}'
             |before (${before.label}):\t"${before.text}"
             |after  (${after.label}):\t"${after.text}"
      """.stripMargin
