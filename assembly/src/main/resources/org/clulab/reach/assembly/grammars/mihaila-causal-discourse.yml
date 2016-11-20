@@ -32,7 +32,7 @@ rules:
     pattern: |
       # taken from Mihaila (Table 4.8)
       [lemma=suggest] [lemma=that] |
-      [lemma=indicate [lemma=that] |
+      [lemma=indicate] [lemma=that] |
       [lemma=thus] |
       [lemma=suggest] |
       [lemma=therefore] |
@@ -51,7 +51,7 @@ rules:
       [lemma=our] [lemma=finding] [lemma=indicate] [lemma=that] |
       [lemma=the] [lemma=result] [lemma=indicate] [lemma=that] |
       [lemma=these] [lemma=result] [lemma=indicate] [lemma=that] |
-      [lemma=these] [lemma=observation] [lemma=suggest] [lemma=that] |
+      [lemma=these] [lemma=observation] [lemma=suggest] [lemma=that]
 
   - name: mihaila-syntax-1
     priority: ${mypriority}

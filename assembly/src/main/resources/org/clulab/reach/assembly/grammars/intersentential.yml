@@ -120,16 +120,36 @@ rules:
       before:Binding = @Binding
       after:Event = (?<= [lemma=/^(this|these)$/]) [mention=Event]+
 
-  - name: cross-sentence-event-coref-this-event
+
+  - name: cross-sentence-event-led-to
     label: Precedence
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
     action: ${myaction}
+    example: "We next studied the effect of these growth factors on the tyrosine phosphorylation of Gab1 and its binding to SHP-2 . EGF , but not IGF or PDGF , led to both increased tyrosine phosphorylation of Gab1 and binding to SHP-2 ( XREF_FIG b ) , suggesting a selective effect of EGF on Ras and MAPK activation mediated by Gab1 and SHP-2 ."
+    pattern: |
+      # NOTE: [lemma=/^(this|these|its?)$/ & mention=Event] will not match "its" in "its binding to SHP-2"
+      after:Event = [lemma=/^(this|these|its?)$/] [mention=Event]+ (?= "." $)
+      # EGF, but not IGF or PDGF, led to both increased tyrosine phosphorylation of Gab1
+      before:Event = [mention=Event]+? [lemma=led] "to" [mention=Event] (?= "and")
+
+
+  # FIXME: add coref action that sees if antecedent is contained in E1
+  - name: cross-sentence-event-coref-this-event
+    label: Precedence
+    priority: ${mypriority}
+    type: "cross-sentence"
+    right-window: 1
+    action: identityAction #${myaction}
+    example: "The scaffolding protein KSR constitutively binds to MEK .  In response to mitogenic stimulation , the KSR and MEK complex is recruited from the cytosol to the cell membrane , where it can now interact with activated Raf-1 and ERK to facilitate the signal flux through the kinase module Raf -- > MEK -- > ERK ( Muller et al , 2001 ) ."
+    example: "We next studied the effect of these growth factors on the tyrosine phosphorylation of Gab1 and its binding to SHP-2 . EGF , but not IGF or PDGF , led to both increased tyrosine phosphorylation of Gab1 and binding to SHP-2 ( XREF_FIG b ) , suggesting a selective effect of EGF on Ras and MAPK activation mediated by Gab1 and SHP-2 ."
     example: "In addition , binding of caveolin-1 or caveolin-3 inhibited the auto-phosphorylation and activation of c-Src and the related Src family tyrosine kinase Fyn [ XREF_BIBR ] .  These interactions were mediated by residues 82-101 in the cytoplasmic N-terminus of caveolin-1 , a region of the protein which is called the ' scaffolding domain ' , and which interacts with numerous proteins ."
     pattern: |
       before:Event = @Event
-      after:Event = (?<= [lemma=/^(this|these|its)$/]) [mention=Event]+
+      # NOTE: [lemma=/^(this|these|its?)$/ & mention=Event] will not match "its" in "its binding to SHP-2"
+      # the sentence index for a coref mention appears to be its antecedent: https://github.com/clulab/reach/blob/b00fa013c35899501385f54928e496e8aafc1fbe/main/src/main/scala/org/clulab/coref/Coref.scala#L99
+      after:Event = [lemma=/^(this|these|its?)$/] [mention=Event]+
 
   - name: cross-sentence-next-step
     label: Precedence

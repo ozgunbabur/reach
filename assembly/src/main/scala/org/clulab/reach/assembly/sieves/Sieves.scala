@@ -124,26 +124,51 @@ class PrecedenceSieves extends Sieves {
   }
 
   /**
+    * Patterns derived from teh BioDRB corpus
+    *
+    * @param mentions a sequence of Odin Mentions
+    * @param manager  an AssemblyManager
+    * @return an AssemblyManager
+    */
+  def bioDRBpatterns(mentions: Seq[Mention], manager: AssemblyManager): AssemblyManager = {
+
+    val name = "bioDRBpatterns"
+
+    logger.debug(s"\tapplying '$name' sieve...")
+
+    val actions = new AssemblyActions
+    val ruleFile = "/org/clulab/reach/assembly/grammars/biodrb-patterns.yml"
+
+    val am2 = applyPrecedenceRules(mentions, manager, name, ruleFile, actions)
+
+    am2
+  }
+
+  /**
     * Rule-based method using discourse features to establish precedence
     *
     * @param mentions a sequence of Odin Mentions
     * @param manager  an AssemblyManager
     * @return an AssemblyManager
     */
-  def discourseRBPrecedence(mentions: Seq[Mention], manager: AssemblyManager): AssemblyManager = {
+  def combinedRBPrecedence(mentions: Seq[Mention], manager: AssemblyManager): AssemblyManager = {
 
-    val name = "discourseRBPrecedence"
+    val name = "combinedRBPrecedence"
 
     logger.debug(s"\tapplying '$name' sieve...")
+
+    //AssemblySieve(bioDRBpatterns) andThen AssemblySieve(intersententialRBPrecedence) andThen AssemblySieve(intrasententialRBPrecedence)
 
     val actions = new AssemblyActions
     val intraSententialRules =  "/org/clulab/reach/assembly/grammars/intrasentential.yml"
     val interSententialRules = "/org/clulab/reach/assembly/grammars/intersentential.yml"
+    val bioDRBRules = "/org/clulab/reach/assembly/grammars/biodrb-patterns.yml"
 
     val am2 = applyPrecedenceRules(mentions, manager, name, intraSententialRules, actions)
-    val am3 = applyPrecedenceRules(mentions, manager, name, interSententialRules, actions)
+    val am3 = applyPrecedenceRules(mentions, am2, name, interSententialRules, actions)
+    val am4 = applyPrecedenceRules(mentions, am3, name, bioDRBRules, actions)
 
-    am3
+    am4
   }
   
   /**
@@ -463,7 +488,7 @@ object SieveUtils extends LazyLogging {
     "intrasententialRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.intrasententialRBPrecedence)),
     "reichenbachPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.reichenbachPrecedence)),
     "intersententialRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.intersententialRBPrecedence)),
-    "discourseRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.discourseRBPrecedence))
+    "combinedRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.combinedRBPrecedence))
   )
 
   /**
@@ -482,15 +507,15 @@ object SieveUtils extends LazyLogging {
     * Applies a set of assembly rules to provide mentions (existingMentions). <br>
     * Care is taken to apply the rules to each set of mentions from the same Document.
     *
-    * @param rulesPath a path to a rule file (under resources)
+    * @param rules a path to a rule file (assumed to be under resources)
     * @param existingMentions a Seq of Odin Mentions
     * @return a Seq of RelationMentions
     */
-  def assemblyViaRules(rulesPath: String, existingMentions: Seq[Mention], actions: Actions = new Actions): Seq[Mention] = {
+  def assemblyViaRules(rules: String, existingMentions: Seq[Mention], actions: Actions = new Actions): Seq[Mention] = {
 
     // read rules and initialize state with existing mentions
-    val rules:String = RuleReader.readResource(rulesPath)
-    val ee = ExtractorEngine(rules, actions)
+    val odinRules: String = if (rules.endsWith(".yml")) RuleReader.readResource(rules) else rules
+    val ee = ExtractorEngine(odinRules, actions)
 
     // since we break a paper into sections, we'll need to group the mentions by doc
     // rule set only produces target RelationMentions

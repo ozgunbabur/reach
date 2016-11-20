@@ -103,9 +103,8 @@ object SieveEvaluator {
 
     val availableSieves: Map[String, AssemblySieve] = Map(
       //"reichenbachPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.reichenbachPrecedence)),
-      //"intrasententialRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.intrasententialRBPrecedence)),
-      //"intersententialRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.intersententialRBPrecedence)),
-      "discourseRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.discourseRBPrecedence))
+      "bioDRBpatterns" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.bioDRBpatterns)),
+      "combinedRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.combinedRBPrecedence))
     )
 
     val ams = for {

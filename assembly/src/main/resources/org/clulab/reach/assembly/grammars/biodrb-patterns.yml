@@ -100,7 +100,7 @@ rules:
     example: "Since BEFORE, AFTER"
     pattern: |
       # avoid terms evoking uncertainty, conjecture, etc.
-      ^ Since @before:Event "," [^lemma=/^(suspect|hypothesize)$/]{,3} @after:Event
+      ^ Since @before:Event "," [!lemma=/^(suspect|hypothesize)$/]{,3} @after:Event
 
   #############################
   # cross-sentence

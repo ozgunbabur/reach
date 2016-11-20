@@ -49,14 +49,28 @@ rules:
       |
       [lemma=as] a result of @before:Event ","? @after:Event
 
-  - name: intrasentence-leading-to
+ # FIXME: add syntactic variant
+  - name: intrasentence-surface-leading-to
     label: ${mylabel}
     priority: ${mypriority}
     type: token
-    action: ${myaction}
+    action: identityAction
     example: "AMPK directly phosphorylates Raptor in an LKB1 dependent manner leading to the binding of 14-3-3 proteins to Raptor and subsequent inhibition of mTORC1 ."
+    example: "IKKalpha then phosphorylates the C-terminal region of p100 leading to subsequent processing of the p100 and RelB complex into p52 and RelB and its translocation into the nucleus [ XREF_BIBR ] ."
     pattern: |
-      @before:ComplexEvent []*? leading to [tag=DT]? "subsequent"? @after:Event
+      @before:ComplexEvent []*? leading to [tag=DT]? "subsequent"? []{0,3} @after:Event
+
+  - name: intrasentence-syntax-leading-to
+    label: ${mylabel}
+    priority: ${mypriority}
+    type: dependency
+    action: identityAction
+    example: "AMPK directly phosphorylates Raptor in an LKB1 dependent manner leading to the binding of 14-3-3 proteins to Raptor and subsequent inhibition of mTORC1 ."
+    example: "IKKalpha then phosphorylates the C-terminal region of p100 leading to subsequent processing of the p100 and RelB complex into p52 and RelB and its translocation into the nucleus [ XREF_BIBR ] ."
+    pattern: |
+      trigger = [lemma=lead] to
+      before:ComplexEvent = <vmod
+      after:Event = prep_to "prep_of"?
 
   - name: intrasentence-where-it
     label: ${mylabel}
@@ -364,3 +378,29 @@ rules:
     priority: ${surfacerulepriority}
     pattern: |
      @before:${before_type} []{,2} [lemma=thereby] []{,3} @after:${after_type}
+
+  - name: intrasentence-surface-since
+    example: "The fact that Tax1 interacts with ATFx adds another level of complexity since this factor represses Tax1 mediated LTR activation [ XREF_BIBR ] ."
+    label: ${mylabel}
+    type: token
+    priority: ${surfacerulepriority}
+    pattern: |
+     @before:${before_type} []{,6} ","? [lemma=since] []{,3} @after:${after_type}
+
+  - name: intrasentence-surface-facilitate-the-NN-of
+    example: "After binding of an agonist , the activated GPCR induces an exchange of GDP to GTP on the Galpha subunit and facilitates the dissociation of GTP bound Gbetagamma and Galpha subunits [ XREF_BIBR ] ."
+    label: ${mylabel}
+    type: token
+    priority: ${surfacerulepriority}
+    pattern: |
+     @before:${before_type} []{,6} ","? "and"? [lemma=facilitate] the [tag=/^N/] of @after:${after_type}
+
+  - name: intrasentence-syntax-facilitate-the-NN-of
+    example: "After binding of an agonist , the activated GPCR induces an exchange of GDP to GTP on the Galpha subunit and facilitates the dissociation of GTP bound Gbetagamma and Galpha subunits [ XREF_BIBR ] ."
+    label: ${mylabel}
+    type: dependency
+    priority: ${surfacerulepriority}
+    pattern: |
+     trigger = [lemma=facilitate] the [tag=/^N/] of
+     before:${before_type} = nsubj
+     after:${after_type} = prep_of
