@@ -159,6 +159,8 @@ object SieveEvaluator {
       val tp = predicted.filter(p => posGold exists(g => g.isEquivalentTo(p, ignoreMods = im)))
       val fp = predicted.filter(p => ! posGold.exists(g => g.isEquivalentTo(p, ignoreMods = im)))
       val fn = posGold.filter(g => ! predicted.exists(p => p.isEquivalentTo(g, ignoreMods = im)))
+      // ensure there is no overlap
+      require(tp.toSet.intersect(fn.toSet).size == 0, s"TP and FN for $lbl must not intersect")
 
       // micro performance
       val p = tp.size / (tp.size + fp.size + smoothing)
@@ -169,9 +171,9 @@ object SieveEvaluator {
       val sievePerformance = Performance(lbl, "**ALL**", p, r, f1, tp.size, fp.size, fn.size)
 
       // write true positives, false positives, and false negatives to files
-      new File(s"true-positives.txt").writeString(summarizePrecedenceRelations(tp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
-      new File(s"false-positives.txt").writeString(summarizePrecedenceRelations(fp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
-      new File(s"false-negatives.txt").writeString(summarizePrecedenceRelations(fn), java.nio.charset.StandardCharsets.UTF_8)
+      new File(s"$lbl-sieve-true-positives.txt").writeString(summarizePrecedenceRelations(tp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
+      new File(s"$lbl-sieve-false-positives.txt").writeString(summarizePrecedenceRelations(fp.toSeq), java.nio.charset.StandardCharsets.UTF_8)
+      new File(s"$lbl-sieve-false-negatives.txt").writeString(summarizePrecedenceRelations(fn), java.nio.charset.StandardCharsets.UTF_8)
 
       val rulePerformance: Seq[Performance] = {
         val rulePs = predicted.groupBy(pr => (pr.foundBy, pr.evidence.head.foundBy))
