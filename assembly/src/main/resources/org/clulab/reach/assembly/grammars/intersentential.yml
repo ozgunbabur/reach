@@ -151,6 +151,18 @@ rules:
       # the sentence index for a coref mention appears to be its antecedent: https://github.com/clulab/reach/blob/b00fa013c35899501385f54928e496e8aafc1fbe/main/src/main/scala/org/clulab/coref/Coref.scala#L99
       after:Event = [lemma=/^(this|these|its?)$/] [mention=Event]+
 
+  # FIXME: add coref action that sees if antecedent is contained in E1
+  - name: cross-sentence-event-coref-where-it
+    label: Precedence
+    priority: ${mypriority}
+    type: "cross-sentence"
+    right-window: 1
+    action: identityAction #${myaction}
+    example: "The scaffolding protein KSR constitutively binds to MEK . In response to mitogenic stimulation , the KSR and MEK complex is recruited from the cytosol to the cell membrane , where it can now interact with activated Raf-1 and ERK to facilitate the signal flux through the kinase module Raf -- > MEK -- > ERK ( Muller et al , 2001 ) ."
+    pattern: |
+      before:Event = @Event
+      after:Event = (?<= where) [lemma=/^(this|these|its?)$/] [mention=Event]+
+
   - name: cross-sentence-next-step
     label: Precedence
     priority: ${mypriority}
