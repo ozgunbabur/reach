@@ -6,7 +6,7 @@ taxonomy: org/clulab/reach/biogrammar/taxonomy.yml
 
 # vars for assembly sieve
 vars:
-  mylabel: "Precedence"
+  mylabel: "PrecedenceRelation"
   mypriority: "2"
   after_type: "Event"
   before_type: "Event"
@@ -15,9 +15,6 @@ vars:
   regverbaltrigger: [lemma=/^(promote)/]
 
 rules:
-  # precedence markers
-  #- import: org/clulab/reach/assembly/grammars/precedence-markers.yml
-
   ########################
   #
   # cross-sentence cases
@@ -26,7 +23,7 @@ rules:
 
 # FIXME: this is far too permissive
 #  - name: cross-sentence-binding-binding
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -37,7 +34,7 @@ rules:
 #      after:Binding = (?<= @PrecedenceMarker? []*) @Binding
 
 #  - name: cross-sentence-activated-1
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -48,7 +45,7 @@ rules:
 #      after:ComplexEvent = (?<= [lemma=activate] []*) @ComplexEvent
 
   - name: cross-sentence-activated-2
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -61,7 +58,7 @@ rules:
 
 # FIXME: this is far too permissive
 #  - name: cross-sentence-shared-controlleds
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -73,7 +70,7 @@ rules:
 
   # FIXME: modify Constraints.sharedControlleds to allow comparisons to SimpleEvents (using themes)
   - name: cross-sentence-complex-event-then-binding
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -85,7 +82,7 @@ rules:
 
 
   - name: cross-sentence-furthermore
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -99,7 +96,7 @@ rules:
 
 #  # FIXME: this doesn't seem to work
 #  - name: cross-sentence-before-is-antecedent
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -110,7 +107,7 @@ rules:
 #      after:Event = @Event
 
   - name: cross-sentence-binding-coref-this-event
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -122,7 +119,7 @@ rules:
 
 
   - name: cross-sentence-event-led-to
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -137,7 +134,7 @@ rules:
 
   # FIXME: add coref action that sees if antecedent is contained in E1
   - name: cross-sentence-event-coref-this-event
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -153,7 +150,7 @@ rules:
 
   # FIXME: add coref action that sees if antecedent is contained in E1
   - name: cross-sentence-event-coref-where-it
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -164,7 +161,7 @@ rules:
       after:Event = (?<= where) [lemma=/^(this|these|its?)$/] [mention=Event]+
 
   - name: cross-sentence-next-step
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -176,7 +173,7 @@ rules:
 
 
 #  - name: cross-sentence-discourse-clue-2
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -188,7 +185,7 @@ rules:
 
 
 #  - name: cross-sentence-discourse-clue-3
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${mypriority}
 #    type: "cross-sentence"
 #    right-window: 1
@@ -199,7 +196,7 @@ rules:
 #      after:Event = (?<= which "then"? (in turn)?) @Event
 
   - name: cross-sentence-induce
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -210,7 +207,7 @@ rules:
       after:Event = [mention=Event]*? [word=/(?i)^induces$/ & mention=Event] [mention=Event]+
 
   - name: cross-sentence-comma-which
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -221,7 +218,7 @@ rules:
       after:Event = @Event (?= "," which)
 
   - name: cross-sentence-in-order-to
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -232,7 +229,7 @@ rules:
       after:Event = (?<= ^([lemma=in] [lemma=order])? [lemma=to] [tag=/^V/] []*? ",") @Event
 
   - name: cross-sentence-where-it
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -243,7 +240,7 @@ rules:
       after:Event = (?<= ","? where) [lemma=it] [mention=Event]+
 
   - name: cross-sentence-when-x
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -254,7 +251,7 @@ rules:
       after:Event = (?<= [lemma=when] []*? ",") @Event
 
   - name: cross-sentence-when-comma-x-after-y
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -265,7 +262,7 @@ rules:
       after:Event = (?<= [lemma=after] []*?) @Event
 
   - name: cross-sentence-discourse-when-x-then-y
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -275,7 +272,7 @@ rules:
       after:Event = [mention=Event]*? [lemma=then & mention=Event] [mention=Event]+
 
   - name: cross-sentence-discourse-then-finally
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -286,7 +283,7 @@ rules:
       after:Event = (?<= ^ [lemma=/(?i)^(then|finally|subsequently)$/] ","?) @Event
 
   - name: cross-sentence-discourse-previously
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     left-window: 1
@@ -296,10 +293,36 @@ rules:
       before:Event = (?<= ^ [lemma=/(?i)^(prior|previously)$/] (to this)? ","?) @Event
       after:Event = @Event
 
+  # import discourse marker rules
+  - import: org/clulab/reach/assembly/grammars/precedence-markers.yml
+    vars:
+      mypriority: "1"
+      
+  - name: cross-sentence-dm-count-1
+    label: Unknown
+    priority: ${mypriority}
+    type: "cross-sentence"
+    left-window: 1
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      E1:Event = @Event (?= []*? @PrecedenceMarker)
+      E2:Event = @Event
+
+  - name: cross-sentence-dm-count-2
+    label: Unknown
+    priority: ${mypriority}
+    type: "cross-sentence"
+    left-window: 1
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      E1:Event = @Event
+      E2:Event = @Event (?= []*? @PrecedenceMarker)
 #[word=/(?i)mediated$/]
 
 #  - name: cross-sentence-these-interactions
-#    label: Precedence
+#    label: ${mylabel}
 #    priority: ${surfacerulepriority}
 #    type: "cross-sentence"
 #    right-window: 1

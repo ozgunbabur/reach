@@ -98,15 +98,52 @@ class AssemblyActions extends Actions with LazyLogging {
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
   }
 
+  def examineIntercedingMarkers(mentions: Seq[Mention], state: State): Seq[Mention] = {
+
+    val precedenceRelations: Seq[Option[Mention]] = for {
+      m <- mentions
+      if m matches UNKNOWN
+      e1 <- m.arguments("E1")
+      e2 <- m.arguments("E2")
+      // ignore equivalent mentions
+      if ! Constraints.areEquivalent(e1, e2, ignoreMods = true)
+      // retrieve precedence markers
+      e1e2Markers = getMentionsInRange(e1.sentence, e2.sentence, state, Some(E1PrecedesE2Marker))
+      e2e1Markers = getMentionsInRange(e1.sentence, e2.sentence, state, Some(E2PrecedesE1Marker))
+//      _ = logger.info(s"Found ${e1e2Markers.size} E1PrecedesE2Markers in sentences ${e1.sentence} and ${e2.sentence}")
+//      _ = logger.info(s"Found ${e2e1Markers.size} interceding E1PrecedesE2Markers in sentences ${e1.sentence} and ${e2.sentence}")
+      // count how many markers fall between e1 and e2
+      // FIXME: may want to consider markers that are contained by e1 and e2
+      e1e2Mcount = e1e2Markers.count(marker => e1.precedes(marker) && !e2.precedes(marker))
+      e2e1Mcount = e1e2Markers.count(marker => e2.precedes(marker) && !e1.precedes(marker))
+//      _ = logger.info(s"Found $e1e2Mcount interceding E1PrecedesE2Markers")
+//      _ = logger.info(s"Found $e2e1Mcount interceding E1PrecedesE2Markers")
+      // check counts
+    } yield (e1e2Mcount > 0, e2e1Mcount > 0) match {
+      // only found E1PrecedesE2Markers
+      case (true, false) =>
+        logger.info("Found an E1 precedss E2 via examineIntercedingMarkers")
+        Some(mkPrecedenceMention(before = e1, after = e2, m.foundBy))
+      // only found E2PrecedesE1Markers
+      case (false, true) =>
+        logger.info("Found an E2 precedss E1 via examineIntercedingMarkers")
+        Some(mkPrecedenceMention(before = e2, after = e1, m.foundBy))
+      case _ => None
+    }
+    precedenceRelations.flatten
+  }
 }
 
 
 object AssemblyActions {
 
+  val UNKNOWN = "Unknown"
   val BEFORE = SieveUtils.beforeRole
   val AFTER = SieveUtils.afterRole
   val PRECEDENCE = SieveUtils.precedenceMentionLabel
   val precedenceMentionLabels = taxonomy.hypernymsFor(PRECEDENCE)
+  val E1PrecedesE2Marker = "E1PrecedesE2Marker"
+  val E2PrecedesE1Marker = "E2PrecedesE1Marker"
 
   def summarizeBeforeAfter(mention: Mention): String = {
     val before = mention.arguments(SieveUtils.beforeRole).head
@@ -171,5 +208,18 @@ object AssemblyActions {
         keep = parent.keep,
         foundBy = parent.foundBy
       )
+  }
+
+  def getMentionsInRange(start: Int, end: Int, state: State, label: Option[String] = None): Seq[Mention] = {
+
+    val candidates = for {
+      i <- start to end
+      m <- state.mentionsFor(i)
+    } yield m
+
+    label match {
+      case Some(lbl) => candidates.filter(_ matches lbl)
+      case _ => candidates
+    }
   }
 }

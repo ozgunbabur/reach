@@ -1,46 +1,49 @@
 taxonomy: org/clulab/reach/biogrammar/taxonomy.yml
 
-# FIXME: these should be subdivided into E1precedesE2Trigger and E2precedesE1Trigger
+# vars for assembly sieve
+vars:
+  mypriority: "1"
+
 rules:
-  - name: precedence-marker
-    label: PrecedenceMarker
-    priority: 1
+  - name: L2R-marker
+    label: E1PrecedesE2Marker
+    priority: ${mypriority}
     type: token
     pattern: |
-      prior to
+      ";"
       |
-      # ex. following, followed by, follows
-      [lemma=follow] "by"?
+      "and"? "to"? [lemma=/^(impair|inhibit|generate|form)$/]
       |
-      then
+      [lemma=be] then
       |
       [lemma=lead] to
       |
       [lemma=result] in
       |
-      "as"? "a"? [lemma=result] (from|of)
+      [lemma=further]
       |
-      before
+      [lemma=subsequent]
       |
-      after
+      [lemma=before]
       |
-      due to
+      prior to
       |
-      "," when
+      # ex. following, followed by, follows
+      [lemma=follow & tag=/^(VB[ND])$/] "by"
       |
-      "," thereby
+      [lemma=result & tag=VBG] "in"
       |
-      furthermore
+      "and"? ","? [lemma=/^(thereby|thus)$/]
       |
       also can
       |
-      precedes the
+      [lemma=precede & tag=VBZ]
       |
-      dependent on
+      and (?= ${regverbaltrigger} | [mention=Event.trgger])
       |
-      depends on
+      ","? which in turn
       |
-      in response to
+      ","? where
       |
       # ex. the first of these
       first
@@ -49,12 +52,28 @@ rules:
       second
       |
       next
+      #|
+      #and that
+
+  - name: R2L-marker
+    label: E2PrecedesE1Marker
+    priority: ${mypriority}
+    type: token
+    pattern: |
+      "as"? "a"? [lemma=result] (from|of)
       |
-      "as"? "a" downstream "effect"?
+      after
       |
-      # Upon PI3K activation,
-      [lemma=upon] (@Event | @Entity activation) ","?
+      due to
       |
-      and ${regverbaltrigger}
+      ","? when
       |
-      which in turn
+      [lemma=be] dependent on
+      |
+      [lemma=depend] on
+      |
+      in response to
+      |
+      "as"? "a" downstream [] of
+    # Upon PI3K activation,
+    #[lemma=upon] (@Event | @Entity activation) ","?

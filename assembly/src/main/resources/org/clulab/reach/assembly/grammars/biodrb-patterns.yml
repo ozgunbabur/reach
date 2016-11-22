@@ -3,7 +3,7 @@ taxonomy: org/clulab/reach/biogrammar/taxonomy.yml
 
 # vars for assembly sieve
 vars:
-  mylabel: "Precedence"
+  mylabel: "PrecedenceRelation"
   mypriority: "2"
   myaction: "validatePrecedenceRelations" # "identityAction"
   # TODO: fix comparison of binding args to ComplexEvent controlleds
@@ -31,7 +31,7 @@ rules:
   #############################
 
   - name: biodrb-intrasentence-causal-result-surface-thereby
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     action: ${myaction}
@@ -41,7 +41,7 @@ rules:
       @before:Event (?<trigger> ","? thereby) @after:Event
 
   - name: biodrb-intrasentence-causal-result-syntax-thereby
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "dependency"
     action: ${myaction}
@@ -53,7 +53,7 @@ rules:
       after:Event = <advmod
 
   - name: biodrb-intrasentence-causal-reason-surface-therefore
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     action: ${myaction}
@@ -62,7 +62,7 @@ rules:
       @after:Event (?<trigger> therefore appears to be due ((at least)? in part | partially) to) @before:Event
 
   - name: biodrb-intrasentence-causal-reason-syntax-therefore
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "dependency"
     action: ${myaction}
@@ -73,7 +73,7 @@ rules:
       after:Event = nsubj
 
   - name: biodrb-intrasentence-causal-reason-surface-due-to
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     action: ${myaction}
@@ -83,7 +83,7 @@ rules:
       @after:Event (?<! not) (?<trigger> ","? due "mainly"? to) @before:Event
 
   - name: biodrb-intrasentence-causal-justification-surface-because
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     action: ${myaction}
@@ -93,7 +93,7 @@ rules:
       @after:Event (?<! not) (?<trigger> ","? because) @before:Event
 
   - name: biodrb-intrasentence-causal-reason-surface-since
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     action: ${myaction}
@@ -107,7 +107,7 @@ rules:
   #############################
 
   - name: biodrb-cross-sentence-causal-result-we-thus
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -118,7 +118,7 @@ rules:
       after:Event = (?<= ^[lemma=we] thus []{,5}) @Event
 
   - name: biodrb-cross-sentence-causal-result-as-a-consequence
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -129,7 +129,7 @@ rules:
       after:Event = (?<= ^[lemma=as] a []? consequence ","? []{,3}) @Event
 
   - name: biodrb-cross-sentence-causal-result-as-a-consequence-2
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "token"
     right-window: 1
@@ -138,7 +138,7 @@ rules:
       ^[lemma=as] a []? consequence of @before:Event "," @after:Event
 
   - name: biodrb-cross-sentence-causal-result-consequently-1
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1
@@ -149,7 +149,7 @@ rules:
       after:Event = (?<= ^[lemma=consequently]",") @Event
 
   - name: biodrb-cross-sentence-causal-result-consequently-2
-    label: Precedence
+    label: ${mylabel}
     priority: ${mypriority}
     type: "cross-sentence"
     right-window: 1

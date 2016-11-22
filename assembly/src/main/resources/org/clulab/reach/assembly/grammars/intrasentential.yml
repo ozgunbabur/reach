@@ -3,7 +3,7 @@ taxonomy: org/clulab/reach/biogrammar/taxonomy.yml
 
 # vars for assembly sieve
 vars:
-  mylabel: "Precedence"
+  mylabel: "PrecedenceRelation"
   mypriority: "2"
   myaction: "validatePrecedenceRelations" # "identityAction"
   # TODO: fix comparison of binding args to ComplexEvent controlleds

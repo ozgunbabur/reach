@@ -477,7 +477,7 @@ object SieveUtils extends LazyLogging {
   val noRelations = Set(NEG)
 
   // the label used to identify Mentions modelling precedence relations
-  val precedenceMentionLabel = "Precedence"
+  val precedenceMentionLabel = "PrecedenceRelation"
   val beforeRole = "before"
   val afterRole = "after"
 
@@ -530,9 +530,6 @@ object SieveUtils extends LazyLogging {
         // initialize a state with the subset of mentions
         // belonging to the same doc.
         m <- ee.extractFrom(doc, oldState)
-        // ensure that mention is one related to Assembly
-        // we don't want to return things from the old state
-        if m matches precedenceMentionLabel
       } yield m
 
     assembledMentions
