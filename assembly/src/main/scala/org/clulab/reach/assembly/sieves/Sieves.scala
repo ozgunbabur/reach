@@ -71,8 +71,11 @@ class PrecedenceSieves extends Sieves {
       a = after.head
       // cannot be an existing regulation
       //if notAnExistingComplexEvent(rel)
-      //if noExistingPrecedence(a, b, manager)
+      //if noExistingPrecedence(a, b, manager
     } {
+//      if (rel.foundBy == "cross-sentence-next-step") {
+//        logger.info(s"cross-sentence-next-step found a precedence relation mention")
+//      }
       // store the precedence relation
       // TODO: add score
       manager.storePrecedenceRelation(b, a, Set(rel), sieveName)
@@ -163,12 +166,17 @@ class PrecedenceSieves extends Sieves {
     val intraSententialRules =  "/org/clulab/reach/assembly/grammars/intrasentential.yml"
     val interSententialRules = "/org/clulab/reach/assembly/grammars/intersentential.yml"
     val bioDRBRules = "/org/clulab/reach/assembly/grammars/biodrb-patterns.yml"
-
+    val precedenceMarkerRules = "/org/clulab/reach/assembly/grammars/precedence-markers.yml"
+    // intrasentence patterns
     val am2 = applyPrecedenceRules(mentions, manager, name, intraSententialRules, actions)
+    // cross-sentence patterns
     val am3 = applyPrecedenceRules(mentions, am2, name, interSententialRules, actions)
+    // patterns derived from BioDRB paper
     val am4 = applyPrecedenceRules(mentions, am3, name, bioDRBRules, actions)
+    // check for interceding precedence markers
+    val am5 = applyPrecedenceRules(mentions, am4, name, precedenceMarkerRules, actions)
 
-    am4
+    am5
   }
   
   /**

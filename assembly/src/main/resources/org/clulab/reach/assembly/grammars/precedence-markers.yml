@@ -3,6 +3,8 @@ taxonomy: org/clulab/reach/biogrammar/taxonomy.yml
 # vars for assembly sieve
 vars:
   mypriority: "1"
+  eventpriority: "2"
+  regverbaltrigger: [lemma=/^(promote)/]
 
 rules:
   - name: L2R-marker
@@ -77,3 +79,35 @@ rules:
       "as"? "a" downstream [] of
     # Upon PI3K activation,
     #[lemma=upon] (@Event | @Entity activation) ","?
+
+
+  - name: intrasentence-dm-count
+    label: Unknown
+    priority: ${eventpriority}
+    type: "token"
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      @E1:Event []*? @PrecedenceMarker []*? @E2:Event
+
+  - name: cross-sentence-dm-count-1
+    label: Unknown
+    priority: ${eventpriority}
+    type: "cross-sentence"
+    left-window: 1
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      E1:Event = @Event (?= []*? @PrecedenceMarker)
+      E2:Event = @Event
+
+  - name: cross-sentence-dm-count-2
+    label: Unknown
+    priority: ${eventpriority}
+    type: "cross-sentence"
+    left-window: 1
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      E1:Event = @Event
+      E2:Event = @Event (?= []*? @PrecedenceMarker)

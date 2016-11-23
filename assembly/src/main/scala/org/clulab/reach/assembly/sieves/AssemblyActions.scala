@@ -25,6 +25,9 @@ class AssemblyActions extends Actions with LazyLogging {
 
   def validatePrecedenceRelations(mentions: Seq[Mention], state: State): Seq[Mention] = {
 
+//    if (mentions.nonEmpty && mentions.head.foundBy == "cross-sentence-next-step") {
+//      logger.info(s"${mentions.size} cross-sentence-next-step candidates found")
+//    }
     val validCandidates = for {
       m <- mentions
       if m.arguments contains BEFORE
@@ -40,9 +43,11 @@ class AssemblyActions extends Actions with LazyLogging {
       if Constraints.isValidRelationPair(b, a)
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
 
-    if (validCandidates.nonEmpty) {
-      logger.debug(s"validatePrecedenceRelations found ${validCandidates.size} matches\n ${validCandidates.map(summarizeBeforeAfter).mkString("\n")}")
-    }
+//    if (mentions.nonEmpty && mentions.head.foundBy == "cross-sentence-next-step") {
+//      logger.info(s"${validCandidates.size} cross-sentence-next-step valid candidates remaining (${validCandidates.distinct.size} distinct)")
+//      logger.info(s"\n${validCandidates.map(AssemblyActions.summarizeBeforeAfter).mkString("\n")}")
+//    }
+
     validCandidates.distinct
   }
 
@@ -122,11 +127,9 @@ class AssemblyActions extends Actions with LazyLogging {
     } yield (e1e2Mcount > 0, e2e1Mcount > 0) match {
       // only found E1PrecedesE2Markers
       case (true, false) =>
-        logger.info("Found an E1 precedss E2 via examineIntercedingMarkers")
         Some(mkPrecedenceMention(before = e1, after = e2, m.foundBy))
       // only found E2PrecedesE1Markers
       case (false, true) =>
-        logger.info("Found an E2 precedss E1 via examineIntercedingMarkers")
         Some(mkPrecedenceMention(before = e2, after = e1, m.foundBy))
       case _ => None
     }

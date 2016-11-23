@@ -294,31 +294,10 @@ rules:
       after:Event = @Event
 
   # import discourse marker rules
-  - import: org/clulab/reach/assembly/grammars/precedence-markers.yml
-    vars:
-      mypriority: "1"
-      
-  - name: cross-sentence-dm-count-1
-    label: Unknown
-    priority: ${mypriority}
-    type: "cross-sentence"
-    left-window: 1
-    # conditionally create a precedence relation based on the interceding discourse markers
-    action: examineIntercedingMarkers
-    pattern: |
-      E1:Event = @Event (?= []*? @PrecedenceMarker)
-      E2:Event = @Event
+#  - import: org/clulab/reach/assembly/grammars/precedence-markers.yml
+#    vars:
+#      mypriority: "1"
 
-  - name: cross-sentence-dm-count-2
-    label: Unknown
-    priority: ${mypriority}
-    type: "cross-sentence"
-    left-window: 1
-    # conditionally create a precedence relation based on the interceding discourse markers
-    action: examineIntercedingMarkers
-    pattern: |
-      E1:Event = @Event
-      E2:Event = @Event (?= []*? @PrecedenceMarker)
 #[word=/(?i)mediated$/]
 
 #  - name: cross-sentence-these-interactions
