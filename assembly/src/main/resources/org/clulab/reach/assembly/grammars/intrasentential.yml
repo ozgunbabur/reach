@@ -454,60 +454,64 @@ rules:
      @before:${before_type} []{,6} ","? "and"? [lemma=facilitate] the [tag=/^N/] of @after:${after_type}
 
   - name: intrasentence-syntax-facilitate-the-NN-of-1
-    example: "After binding of an agonist , the activated GPCR induces an exchange of GDP to GTP on the Galpha subunit and facilitates the dissociation of GTP bound Gbetagamma and Galpha subunits [ XREF_BIBR ] ."
     label: ${mylabel}
     type: dependency
     priority: ${deprulepriority}
+    example: "After binding of an agonist , the activated GPCR induces an exchange of GDP to GTP on the Galpha subunit and facilitates the dissociation of GTP bound Gbetagamma and Galpha subunits [ XREF_BIBR ] ."
     pattern: |
      trigger = [lemma=facilitate] the [tag=/^N/] of
      before:${before_type} = nsubj
      after:${after_type} = ccomp #(nsubj prep_of)?
 
   - name: intrasentence-syntax-B-to-X
-    example: "Lin et al. showed that GSK3beta interacts with DNMT1 to phosphorylate DNMT1 at Ser410 and Ser414 and promotes binding of DNMT1 by betaTrCP leading to proteasomal degradation of DNMT1 ."
     label: ${mylabel}
     type: dependency
     priority: ${deprulepriority}
+    example: "Lin et al. showed that GSK3beta interacts with DNMT1 to phosphorylate DNMT1 at Ser410 and Ser414 and promotes binding of DNMT1 by betaTrCP leading to proteasomal degradation of DNMT1 ."
     pattern: |
      before:${before_type}
      after:${after_type} = xcomp (?= aux "to")
 
-#  - name: intrasentence-syntax-binding-binding-1
-#    example: "GTP bound Ras binds to Raf via interaction of its own effector domain"
-#    label: ${mylabel}
-#    type: dependency
-#    priority: ${deprulepriority}
-#    pattern: |
-#      before:Binding
-#      after:Binding = ccomp
-#
-#  - name: intrasentence-syntax-binding-binding-2
-#    example: "The resulting ATG5 and ATG12 complex interacts with ATG16L"
-#    label: ${mylabel}
-#    type: dependency
-#    priority: ${deprulepriority}
-#    pattern: |
-#      before:Binding
-#      # ex. complex <- interacts
-#      after:Binding = <nsubj
-#
-#  - name: intrasentence-syntax-event-and-event
-#    example: "SUV39H1 interacts with Tax1 and represses Tax1 mediated transactivation of the LTR [ XREF_BIBR ] ."
-#    example: "The methyltransferase Set7/9 interacts with and methylates SIRT1 at Lys233 , Lys235 , Lys236 , and Lys238 of the N-terminal extension ."
-#    example: "In addition , PI3K interacts with Ras and is directly activated by Ras binding to p110 [ XREF_BIBR-XREF_BIBR ] ."
-#    example: "Bevacizumab binds to VEGF and inhibits VEGF receptor binding"
-#    label: ${mylabel}
-#    type: dependency
-#    priority: ${deprulepriority}
-#    pattern: |
-#      before:${before_type}
-#      after:${after_type} = conj_and
+  - name: intrasentence-syntax-binding-binding-1
+    label: ${mylabel}
+    action: ${myaction}
+    type: dependency
+    priority: ${deprulepriority}
+    example: "GTP bound Ras binds to Raf via interaction of its own effector domain"
+    pattern: |
+      before:Binding
+      after:Binding = ccomp
 
-  - name: intrasentence-syntax-event-to-event
-    example: "Lin et al. showed that GSK3beta interacts with DNMT1 to phosphorylate DNMT1 at Ser410 and Ser414 and promotes binding of DNMT1 by betaTrCP leading to proteasomal degradation of DNMT1 ."
+  - name: intrasentence-syntax-binding-binding-2
+    label: ${mylabel}
+    type: dependency
+    action: ${myaction}
+    priority: ${deprulepriority}
+    example: "The resulting ATG5 and ATG12 complex interacts with ATG16L"
+    pattern: |
+      before:Binding
+      # ex. complex <- interacts
+      after:Binding = <nsubj
+
+  - name: intrasentence-syntax-event-and-event
+    label: ${mylabel}
+    type: dependency
+    action: ${myaction}
+    priority: ${deprulepriority}
+    example: "SUV39H1 interacts with Tax1 and represses Tax1 mediated transactivation of the LTR [ XREF_BIBR ] ."
+    example: "The methyltransferase Set7/9 interacts with and methylates SIRT1 at Lys233 , Lys235 , Lys236 , and Lys238 of the N-terminal extension ."
+    example: "In addition , PI3K interacts with Ras and is directly activated by Ras binding to p110 [ XREF_BIBR-XREF_BIBR ] ."
+    example: "Bevacizumab binds to VEGF and inhibits VEGF receptor binding"
+    pattern: |
+      before:${before_type}
+      after:${after_type} = conj_and
+
+  - name: intrasentence-syntax-event-xcomp-event
+    action: ${myaction}
     label: ${mylabel}
     type: dependency
     priority: ${deprulepriority}
+    example: "Lin et al. showed that GSK3beta interacts with DNMT1 to phosphorylate DNMT1 at Ser410 and Ser414 and promotes binding of DNMT1 by betaTrCP leading to proteasomal degradation of DNMT1 ."
     pattern: |
       before:${before_type}
       after:${after_type} = xcomp
