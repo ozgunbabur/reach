@@ -35,10 +35,10 @@ class AssemblyActions extends Actions with LazyLogging {
       b <- m.arguments(BEFORE)
       a <- m.arguments(AFTER)
       // neither reaction should be negated
-      if !Constraints.isNegated(b)
-      if !Constraints.isNegated(a)
+      if ! Constraints.isNegated(b)
+      if ! Constraints.isNegated(a)
       // "a" should not be strictly equivalent to "b"
-      if !Constraints.areEquivalent(b, a, ignoreMods = false)
+      if ! Constraints.areEquivalent(b, a, ignoreMods = false)
       if Constraints.shareEntityGrounding(b, a)
       if Constraints.isValidRelationPair(b, a)
     } yield mkPrecedenceMention(parent = m, before = b, after = a)
@@ -135,10 +135,57 @@ class AssemblyActions extends Actions with LazyLogging {
     }
     precedenceRelations.flatten
   }
+
+  /** check triggers for */
+//  def retrieveBindingsByTriggers(mentions: Seq[Mention], state: State): Seq[Mention] = for {
+//    m <- mentions
+//    if m matches UNKNOWN
+//    b <- m.arguments("E1").flatMap(e1Trigger => state.mentionsFor(e1Trigger.sentence, e1Trigger.tokenInterval, "Binding"))
+//    // tag should be past tense (ex. bound) or a noun (ex. complex)
+//    if SieveUtils.findTrigger(b).tags.get.exists(t => t == "VBD" || t == "NN")
+//    a <- m.arguments("E2").flatMap(e1Trigger => state.mentionsFor(e1Trigger.sentence, e1Trigger.tokenInterval, "Binding"))
+//    // tag should be present tense (ex. binds)
+//    if SieveUtils.findTrigger(a).tags.get.contains("VBZ")
+//    binding <- validatePrecedenceRelations(Seq(mkPrecedenceMention(b, a, m.foundBy)), state)
+//  } yield binding
+
+  /** Inspect any textual overlap of "before" and "after" */
+  def checkOverlap(mentions: Seq[Mention], state: State): Seq[Mention] = for {
+    m <- mentions
+    if m matches PRECEDENCE
+    if m.arguments contains BEFORE
+    if m.arguments contains AFTER
+    b <- m.arguments(BEFORE)
+    a <- m.arguments(AFTER)
+    // if the spans intersect, apply a more aggressive validation check
+    if (! sameSentence(b, a)) || (! invalidSpanOverlap(b, a))
+    // general validity check
+    valid <- validatePrecedenceRelations(Seq(m), state)
+  } yield valid
+
+  def inspectBindingPair(mentions: Seq[Mention], state: State): Seq[Mention] = for {
+    m <- mentions
+    if m matches PRECEDENCE
+    if m.arguments contains BEFORE
+    if m.arguments contains AFTER
+    b <- m.arguments(BEFORE)
+    a <- m.arguments(AFTER)
+    // check if span overlap is plausible
+    if ! invalidSpanOverlap(b, a)
+    if ! crossesPhraseBoundary(b) && ! crossesPhraseBoundary(a)
+    // "before" event should not be immediately preceded by "and" or "," etc.
+    if notBlacklisted(b.sentenceObj.words, b.start - 1, Seq("and", ",", "whether"))
+    // "before" event should not be immediately followed by "and"
+    if notBlacklisted(b.sentenceObj.words, b.end + 1, Seq("and"))
+    // "after" event should not be immediately preceded by "and" or "," etc.
+    if notBlacklisted(a.sentenceObj.words, a.start - 1, Seq(",", "Since"))
+    // general validity check
+    valid <- validatePrecedenceRelations(Seq(m), state)
+  } yield valid
 }
 
 
-object AssemblyActions {
+object AssemblyActions extends LazyLogging {
 
   val UNKNOWN = "Unknown"
   val BEFORE = SieveUtils.beforeRole
@@ -225,4 +272,42 @@ object AssemblyActions {
       case _ => candidates
     }
   }
+
+  /** Checks if mention crosses obvious phrase boundary */
+  def crossesPhraseBoundary(m: Mention): Boolean = m match {
+    case coord if coord.text contains ", and" => true
+    case _ => false
+  }
+
+  /** check if position is a blacklisted word */
+  def isBlacklisted(words: Seq[String], idx: Int, blacklisted: Seq[String]): Boolean = idx match {
+    case outOfBounds if outOfBounds == -1 || outOfBounds > words.size => false
+    case i =>
+      val w = words(i)
+      val isBlacklisted = blacklisted.contains(w)
+      //logger.info(s"'$w' isBlacklisted? <$isBlacklisted>")
+      isBlacklisted
+  }
+  def notBlacklisted(words: Seq[String], idx: Int, blacklisted: Seq[String]): Boolean = ! isBlacklisted(words, idx, blacklisted)
+
+  /** Checks if text spans of mentions overlap in a manner that is unlikely in a case of causal precedence */
+  def invalidSpanOverlap(before: Mention, after: Mention): Boolean = (before, after) match {
+    // assume cross sentence cases are plausible
+    case differentSentences if ! sameSentence(before, after) => false
+    // if the spans do not overlap, assume the pair is plausible
+    case noIntersection if ! overlappingMentions(before, after) => false
+    // inspect intrasentential pairs that overlap
+    case (a,b) =>
+      // after should not be contained by before and the two should not start on the same token
+      (b.tokenInterval.contains(a.tokenInterval) && b.start == a.start) ||
+      // "after" should not end with "before"
+      (a.tokenInterval.contains(b.tokenInterval) && b.end == a.end)
+  }
+
+  def overlappingMentions(m1: Mention, m2: Mention): Boolean = (m1, m2) match {
+    case differentSentences if ! sameSentence(m1, m2) => false
+    case other => m1.tokenInterval overlaps m2.tokenInterval
+  }
+
+  def sameSentence(m1: Mention, m2: Mention): Boolean = m1.sentence == m2.sentence
 }

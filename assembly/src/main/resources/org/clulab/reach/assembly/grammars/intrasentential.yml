@@ -472,31 +472,48 @@ rules:
      before:${before_type}
      after:${after_type} = xcomp (?= aux "to")
 
-  - name: intrasentence-syntax-binding-binding-1
+  - name: intrasentence-surface-bound-binds
     label: ${mylabel}
     action: ${myaction}
-    type: dependency
-    priority: ${deprulepriority}
+    type: token
+    priority: ${surfacerulepriority}
     example: "GTP bound Ras binds to Raf via interaction of its own effector domain"
     pattern: |
-      before:Binding
-      after:Binding = ccomp
+      @Entity (?<E1> [mention=Binding.trigger & tag=/^(VBD|NN)$/]) @Entity (?<E2> [mention=Binding.trigger & tag=VBZ])
 
+  - name: intrasentence-syntax-resulting-before_amod-after_nsubj
+    label: ${mylabel}
+    type: dependency
+    #action: ${myaction}
+    priority: ${deprulepriority}
+    example: "The resulting ATG5 and ATG12 complex interacts with ATG16L"
+    pattern: |
+      trigger = [lemma=the] resulting
+      before:${before_type} = <amod
+      after:${after_type} = nsubj
+
+  # Odin feature idea: it would be nice to apply a rule callback
+  # that acts as a surface-level contextual filter on the elements of this rule
+  # (ex. "before" should not be preceded by a "," etc.)
+  # right now this is all hidden in the action...
   - name: intrasentence-syntax-binding-binding-2
     label: ${mylabel}
     type: dependency
-    action: ${myaction}
+    action: inspectBindingPair
     priority: ${deprulepriority}
     example: "The resulting ATG5 and ATG12 complex interacts with ATG16L"
     pattern: |
       before:Binding
       # ex. complex <- interacts
-      after:Binding = <nsubj
+      after:Binding = <nsubj (?! advmod [lemma=/(?i)^(concurrently|also)$/])
 
+  # FIXME: This needs to be restricted.
+  # ex. only consider pairs where one mention span includes the substring " which " or " that " or " and of "?
+  # this can't be done with the "comma which" rule, as that trigger sometimes overlaps with the "before" and "after" args
   - name: intrasentence-syntax-event-and-event
     label: ${mylabel}
     type: dependency
-    action: ${myaction}
+    action: checkOverlap
     priority: ${deprulepriority}
     example: "SUV39H1 interacts with Tax1 and represses Tax1 mediated transactivation of the LTR [ XREF_BIBR ] ."
     example: "The methyltransferase Set7/9 interacts with and methylates SIRT1 at Lys233 , Lys235 , Lys236 , and Lys238 of the N-terminal extension ."
@@ -507,9 +524,9 @@ rules:
       after:${after_type} = conj_and
 
   - name: intrasentence-syntax-event-xcomp-event
-    action: ${myaction}
     label: ${mylabel}
     type: dependency
+    action: checkOverlap
     priority: ${deprulepriority}
     example: "Lin et al. showed that GSK3beta interacts with DNMT1 to phosphorylate DNMT1 at Ser410 and Ser414 and promotes binding of DNMT1 by betaTrCP leading to proteasomal degradation of DNMT1 ."
     pattern: |
