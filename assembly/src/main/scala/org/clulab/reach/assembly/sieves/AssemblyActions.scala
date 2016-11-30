@@ -182,6 +182,22 @@ class AssemblyActions extends Actions with LazyLogging {
     // general validity check
     valid <- validatePrecedenceRelations(Seq(m), state)
   } yield valid
+
+  def validateCoordinatedEvents(mentions: Seq[Mention], state: State): Seq[Mention] = {
+    val validSubStrings = Set(" which ", " that ", " and of ")
+    val candidates = for {
+      m <- mentions
+      if m matches PRECEDENCE
+      if m.arguments contains BEFORE
+      if m.arguments contains AFTER
+      b <- m.arguments(BEFORE)
+      a <- m.arguments(AFTER)
+      if a.sentence == b.sentence
+      span = a.sentenceObj.words.slice(Seq(a.start, b.start).min, Seq(a.end, b.end).max).mkString(" ")
+      if validSubStrings.exists(s => span contains s)
+    } yield m
+    checkOverlap(candidates.distinct, state)
+  }
 }
 
 
