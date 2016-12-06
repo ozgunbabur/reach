@@ -78,7 +78,7 @@ object Evaluator {
   ): Seq[(L, L)] = {
 
     val folds = mkStratifiedFolds(numFolds, dataset, seed)
-    val output = new ListBuffer[(L, L)]
+    val output = new ListBuffer[(Int, L, L)]
 
     for(fold <- folds) {
       // Uncomment to confirm the size of each class in each fold
@@ -87,13 +87,18 @@ object Evaluator {
       val classifier = classifierFactory()
       classifier.train(dataset, fold.train.toArray)
       for(i <- fold.test) {
-        val sys = classifier.classOf(dataset.mkDatum(i))
-        val gold = dataset.labels(i)
-        output += new Tuple2(dataset.labelLexicon.get(gold), sys)
+        // get gold
+        val goldIndex = dataset.labels(i)
+        val gold = dataset.labelLexicon.get(goldIndex)
+        // get predicted
+        val predicted = classifier.classOf(dataset.mkDatum(i))
+
+        output += Tuple3(i, gold, predicted)
       }
     }
 
-    output
+    // sort by ascending order of index (0 .. n)
+    output.sortBy(_._1).reverse.map(triple => (triple._2, triple._3))
   }
 
   def calculateAccuracy[L](scores: Seq[(L, L)]): Float = {
@@ -215,7 +220,7 @@ object CrossValidateAssemblyRelationClassifier extends App with LazyLogging {
   val res = for {
       model <- models
     } yield {
-      val scores = Evaluator.stratifiedCrossValidate(
+        val scores = Evaluator.stratifiedCrossValidate(
         dataset = precedenceDataset,
         classifierFactory = () => AssemblyRelationClassifier.getModel(model),
         numFolds = 10
