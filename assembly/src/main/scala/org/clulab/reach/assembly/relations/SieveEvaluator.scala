@@ -217,9 +217,10 @@ object SieveEvaluator {
 
     performanceOfEachSieve.toSeq
   }
+
 }
 
-object RunRBSieveEval extends App with LazyLogging {
+object RunRBSieveAnalysis extends App with LazyLogging {
 
   import SieveEvaluator._
   import ai.lum.common.ConfigUtils._
@@ -232,4 +233,61 @@ object RunRBSieveEval extends App with LazyLogging {
   val sieveResults = SieveEvaluator.applyEachSieve(corpus.mentions)
   val preformanceForEachSieve = SieveEvaluator.evaluateSieves(corpus.precedenceRelations, sieveResults)
 
+}
+
+object GenerateRBSieveScoreFiles extends App with LazyLogging {
+
+  import org.apache.commons.io.FilenameUtils
+  import org.clulab.reach.assembly.relations.classifier.CrossValidateAssemblyRelationClassifier.{logger => _, _}
+  import org.clulab.reach.assembly.relations.classifier.{Evaluator, LabelPair}
+
+  val config = ConfigFactory.load()
+
+  def evaluateRuleBasedSieves(eps: Seq[EventPair]): Unit = {
+
+    val results = config.getString("assembly.classifier.results")
+
+    val dedup = new DeduplicationSieves()
+    val precedence = new PrecedenceSieves()
+
+    val availableSieves: Map[String, AssemblySieve] = Map(
+      "reichenbachPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.reichenbachPrecedence)),
+      //"bioDRBpatterns" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.bioDRBpatterns)),
+      "combinedRBPrecedence" -> (AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.combinedRBPrecedence))
+    )
+
+    val WRONG = "WRONG"
+    for ((sieveName, s) <- availableSieves) {
+      // evaluate each sieve
+      val scores: Seq[LabelPair[String]] = for {
+        (ep, i) <- eps.zipWithIndex
+        if Constraints.isValidRelationPair(ep.e1, ep.e2)
+        mentions = Seq(ep.e1, ep.e2)
+        am = s.apply(mentions)
+      } yield {
+        ep.relation match {
+          case `NEG` =>
+            val label = if ((!am.successorsOf(ep.e2).exists(eer => eer.isEquivalentTo(ep.e1, ignoreMods = false))) && (!am.successorsOf(ep.e1).exists(eer => eer.isEquivalentTo(ep.e2, ignoreMods = false)))) NEG else WRONG
+            LabelPair[String](i, gold = ep.relation, predicted = label)
+          case `E2PrecedesE1` =>
+            val label = if (am.successorsOf(ep.e2).exists(eer => eer.isEquivalentTo(ep.e1, ignoreMods = false))) E2PrecedesE1 else WRONG
+            LabelPair[String](i, gold = ep.relation, predicted = label)
+          case `E1PrecedesE2` =>
+            val label = if (am.successorsOf(ep.e1).exists(eer => eer.isEquivalentTo(ep.e2, ignoreMods = false))) E1PrecedesE2 else WRONG
+            LabelPair[String](i, gold = ep.relation, predicted = label)
+        }
+      }
+      val performance = Evaluator.calculatePerformance(scores)
+      // save results to file
+      val outFile = s"${FilenameUtils.removeExtension(results)}-$sieveName.${FilenameUtils.getExtension(results)}"
+      logger.info(s"writing '$sieveName' scores to $outFile")
+      Evaluator.writeScoresToTSV(scores, outFile)
+    }
+  }
+
+  // gather precedence relations corpus
+  val precedenceAnnotations = CorpusReader.filterRelations(SieveEvaluator.eps, precedenceRelations)
+
+  // evaluate rule-based sieves
+  evaluateRuleBasedSieves(precedenceAnnotations)
 }
