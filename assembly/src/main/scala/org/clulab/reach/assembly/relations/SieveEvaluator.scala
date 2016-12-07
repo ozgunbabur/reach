@@ -388,6 +388,7 @@ object ApplyRulesToDocuments extends App with LazyLogging {
       case false =>
         val prs = getPrecedenceRelations(cms)
         val candidateEPs = precedenceRelationsToEventPairs(prs)
+        logger.info(s"Rules found ${candidateEPs.size} matches for $paperID")
         candidateEPs
       case true => Nil
     }
