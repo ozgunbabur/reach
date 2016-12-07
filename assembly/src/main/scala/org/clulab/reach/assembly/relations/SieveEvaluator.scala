@@ -1,7 +1,7 @@
 package org.clulab.reach.assembly.relations
 
 import com.typesafe.config.ConfigFactory
-import org.clulab.reach.assembly.relations.corpus.{Corpus, CorpusReader, EventPair}
+import org.clulab.reach.assembly.relations.corpus.{AnnotationUtils, Corpus, CorpusReader, EventPair}
 import org.clulab.odin._
 import org.clulab.reach.assembly.{AssemblyManager, PrecedenceRelation}
 import org.clulab.reach.assembly.sieves._
@@ -290,4 +290,115 @@ object GenerateRBSieveScoreFiles extends App with LazyLogging {
 
   // evaluate rule-based sieves
   evaluateRuleBasedSieves(precedenceAnnotations)
+}
+
+/**
+  * Apply rules to documents and produce corpus of likely precedence relations
+  */
+object ApplyRulesToDocuments extends LazyLogging {
+
+  import org.clulab.reach.mentions._
+  import ai.lum.common.ConfigUtils._
+  import ai.lum.common.RandomUtils._
+  import org.clulab.reach.assembly.relations.corpus._
+  import org.clulab.reach.assembly.relations.corpus.CorpusBuilder.selectEventPairs
+  import org.clulab.reach.serialization.json.{ JSONSerializer => ReachJSONSerializer }
+  import scala.collection.parallel.ForkJoinTaskSupport
+
+
+  val dedup = new DeduplicationSieves()
+  val precedence = new PrecedenceSieves()
+  val rbSieve = AssemblySieve(dedup.trackMentions) andThen AssemblySieve(precedence.combinedRBPrecedence)
+
+  /**
+    * Convert precedence relations to EventPairs
+    * @param prs a Seq[PrecedenceRelation]
+    * @return a Seq[EventPair]
+    */
+  def precedenceRelationsToEventPairs(prs: Seq[PrecedenceRelation]): Seq[EventPair] = for {
+    pr <- prs
+    e <- pr.evidence
+    if e.arguments contains "before"
+    if e.arguments contains "after"
+    // create before/after pairs
+    b <- e.arguments("before")
+    a <- e.arguments("after")
+  } yield {
+    val mns = Seq(b,a).sortWith((m1, m2) => m1 precedes m2)
+    val before = mns.head
+    val after = mns.last
+
+    EventPair(
+      e1 = before.toCorefMention,
+      e2 = after.toCorefMention,
+      relation = if (b precedes a) E1PrecedesE2 else E2PrecedesE1,
+      confidence = AnnotationUtils.HIGH,
+      annotatorID = e.foundBy,
+      notes = Some(e.foundBy)
+    )
+  }
+
+  /**
+    * Note that though this will work, it is an expensive way to apply the rules
+    */
+  def getPrecedenceRelations(cms: Seq[CorefMention]): Seq[PrecedenceRelation] = {
+    val eps = selectEventPairs(cms)
+    for {
+      ep <- eps
+      mns = Seq(ep.e1, ep.e2)
+      am = rbSieve.apply(mns)
+      pr <- am.getPrecedenceRelations
+    } yield pr
+  }
+
+  val config = ConfigFactory.load()
+
+  // corpus constraints
+  // avoid this papers
+  val skip: Set[String] = config[List[String]]("assembly.corpus.constraints.skip").toSet
+  val kWindow = config.getInt("assembly.windowSize")
+  val validLabels: Set[String] = config[List[String]]("assembly.corpus.validLabels").toSet
+
+  val jsonFiles: Seq[File] = new File(config.getString("assembly.corpus.jsonDir")).listFiles.toSeq
+
+  val random = RandomWrapper(new java.util.Random(42L))
+
+  val sampleSize = 1000
+
+  val threadLimit: Int = config[Int]("threadLimit")
+
+  logger.info(s"skipping ${skip.size} files")
+  logger.info(s"Using $threadLimit threads")
+  logger.info(s"Valid labels: $validLabels")
+  logger.info(s"Sample size: $sampleSize")
+
+
+  val sampledFiles = random.sampleWithoutReplacement[File, Seq](jsonFiles, sampleSize).par
+  // prepare corpus
+  logger.info(s"Loading dataset ...")
+
+  sampledFiles.tasksupport =
+    new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(threadLimit))
+
+  val eps: Seq[EventPair] = sampledFiles.flatMap{ f =>
+    val cms = ReachJSONSerializer.toCorefMentions(f)
+    val paperID = getPMID(cms.head)
+    // should this paper be skipped?
+    skip.contains(paperID) match {
+      case false =>
+        val prs = getPrecedenceRelations(cms)
+        val candidateEPs = precedenceRelationsToEventPairs(prs)
+        candidateEPs
+      case true => Nil
+    }
+  }.seq
+
+  logger.info(s"Found ${eps.size} matches from precedence rules ...")
+
+  val outDir: File = config[File]("assembly.corpus.corpusDir")
+  logger.info(s"Writing rule-derived pairs to ${outDir.getCanonicalPath}")
+
+  // create corpus and write to file
+  val corpus = Corpus(eps)
+  corpus.writeJSON(outDir, pretty = false)
 }
