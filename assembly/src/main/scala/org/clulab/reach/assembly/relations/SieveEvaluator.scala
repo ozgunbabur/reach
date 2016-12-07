@@ -295,7 +295,7 @@ object GenerateRBSieveScoreFiles extends App with LazyLogging {
 /**
   * Apply rules to documents and produce corpus of likely precedence relations
   */
-object ApplyRulesToDocuments extends LazyLogging {
+object ApplyRulesToDocuments extends App with LazyLogging {
 
   import org.clulab.reach.mentions._
   import ai.lum.common.ConfigUtils._
