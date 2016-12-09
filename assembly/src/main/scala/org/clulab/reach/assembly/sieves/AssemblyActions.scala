@@ -317,6 +317,7 @@ object AssemblyActions extends LazyLogging {
       // after should not be contained by before and the two should not start on the same token
       (b.tokenInterval.contains(a.tokenInterval) && b.start == a.start) ||
       // "after" should not end with "before"
+      // FIXME: this doesn't seem to be working according to the false positives
       (a.tokenInterval.contains(b.tokenInterval) && b.end == a.end)
   }
 
