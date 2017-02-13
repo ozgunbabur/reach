@@ -6,12 +6,62 @@ vars:
   eventpriority: "2"
   regverbaltrigger: [lemma=/^(promote)/]
 
+
+
+
+
+and can
+and subsequent
+that have
+that have been
+sequential
+further
+then [tag=VBZ]
+where it
+where they
+can now
+now
+with and
+in turn
+is then
+
+
+prevented from
+
 rules:
   - name: L2R-marker
     label: E1PrecedesE2Marker
     priority: ${mypriority}
     type: token
     pattern: |
+      and can
+      |
+      and subsequent
+      |
+      can now
+      |
+      now
+      |
+      [tab=VBZ] with and
+      |
+      as well as
+      |
+      then [tag=VBZ]
+      |
+      where it
+      |
+      where they
+      |
+      [lemma=amplify]
+      |
+      [lemma=directly]
+      |
+      [lemma=steadily]
+      |
+      [lemma=release & tag=/^(VBZ|VBG)$/]
+      |
+      [lemma=/^(facilitate|promote)$/ & !tag=VBN]
+      |
       ";"
       |
       "and"? "to"? [lemma=/^(impair|inhibit|generate|form)$/]
@@ -42,6 +92,8 @@ rules:
       [lemma=precede & tag=VBZ]
       |
       and (?= ${regverbaltrigger} | [mention=Event.trgger])
+      |
+      in turn
       |
       ","? which in turn
       |
@@ -74,9 +126,17 @@ rules:
       |
       [lemma=depend] on
       |
+      that have "been"?
+      |
+      that were
+      |
+      [lemma=/^(facilitate|promote)$/ & tag=VBN]
+      |
       in response to
       |
       "as"? "a" downstream [] of
+      |
+      since
     # Upon PI3K activation,
     #[lemma=upon] (@Event | @Entity activation) ","?
 
