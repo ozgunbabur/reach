@@ -183,7 +183,7 @@ object Constraints {
         AssemblyManager.isValidMention(o1) && AssemblyManager.isValidMention(o2)
     }
     // text spans should be unique
-    (m1.words != m2.words) && ceConstraint &&
+    (m1.text != m2.text) && ceConstraint &&
       // neither mention should be negated
       !isNegated(m1) && !isNegated(m2)
   }
