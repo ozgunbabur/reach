@@ -82,6 +82,7 @@
     - PrecedenceRelation
     - Unknown
     - CausalTrigger
+    - ContrastiveMarker
     - PrecedenceMarker:
       - E1PrecedesE2Marker
       - E2PrecedesE1Marker

@@ -7,6 +7,20 @@ vars:
   regverbaltrigger: [lemma=/^(promote)/]
 
 rules:
+  # avoid these elements when establishing precedence relations signaled by DMs
+  - name: contrastive-markers
+    label: ContrastiveMarker
+    priority: ${mypriority}
+    type: token
+    pattern: |
+      [lemma=except] [lemma=for]
+      |
+      [lemma=while]
+      |
+      [lemma=whereas]
+      |
+      [lemma=whether]
+
   - name: L2R-marker
     label: E1PrecedesE2Marker
     priority: ${mypriority}
@@ -92,6 +106,7 @@ rules:
     priority: ${mypriority}
     type: token
     pattern: |
+      attributed to
       "as"? "a"? [lemma=result] (from|of)
       |
       after
@@ -119,14 +134,25 @@ rules:
     #[lemma=upon] (@Event | @Entity activation) ","?
 
 
-  - name: intrasentence-dm-count
+  # left to right precedence
+  - name: intrasentence-dm-count-lr
     label: Unknown
     priority: ${eventpriority}
     type: "token"
     # conditionally create a precedence relation based on the interceding discourse markers
     action: examineIntercedingMarkers
     pattern: |
-      @E1:Event []*? @PrecedenceMarker []*? @E2:Event
+      (?<! @ContrastiveMarker []*?) @E1:Event [!mention=ContrastiveMarker]*? @E1PrecedesE2Marker [!mention=ContrastiveMarker]*? @E2:Event
+
+  # right to left precedence
+  - name: intrasentence-dm-count-rl
+    label: Unknown
+    priority: ${eventpriority}
+    type: "token"
+    # conditionally create a precedence relation based on the interceding discourse markers
+    action: examineIntercedingMarkers
+    pattern: |
+      (?<! @ContrastiveMarker []*?) @E2:Event [!mention=ContrastiveMarker]*? @E2PrecedesE1Marker [!mention=ContrastiveMarker]*? @E1:Event
 
   - name: cross-sentence-dm-count-1
     label: Unknown
