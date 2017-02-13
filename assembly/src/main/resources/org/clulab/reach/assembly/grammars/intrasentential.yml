@@ -510,18 +510,18 @@ rules:
   # This needs to be restricted.
   # ex. only consider pairs where one mention span includes the substring " which " or " that " or " and of "?
   # this can't be done with the "comma which" rule, as that trigger sometimes overlaps with the "before" and "after" args
-  - name: intrasentence-syntax-event-and-event
-    label: ${mylabel}
-    type: dependency
-    action: validateCoordinatedEvents
-    priority: ${deprulepriority}
-    example: "SUV39H1 interacts with Tax1 and represses Tax1 mediated transactivation of the LTR [ XREF_BIBR ] ."
-    example: "The methyltransferase Set7/9 interacts with and methylates SIRT1 at Lys233 , Lys235 , Lys236 , and Lys238 of the N-terminal extension ."
-    example: "In addition , PI3K interacts with Ras and is directly activated by Ras binding to p110 [ XREF_BIBR-XREF_BIBR ] ."
-    example: "Bevacizumab binds to VEGF and inhibits VEGF receptor binding"
-    pattern: |
-      before:${before_type}
-      after:${after_type} = conj_and
+#  - name: intrasentence-syntax-event-and-event
+#    label: ${mylabel}
+#    type: dependency
+#    action: validateCoordinatedEvents
+#    priority: ${deprulepriority}
+#    example: "SUV39H1 interacts with Tax1 and represses Tax1 mediated transactivation of the LTR [ XREF_BIBR ] ."
+#    example: "The methyltransferase Set7/9 interacts with and methylates SIRT1 at Lys233 , Lys235 , Lys236 , and Lys238 of the N-terminal extension ."
+#    example: "In addition , PI3K interacts with Ras and is directly activated by Ras binding to p110 [ XREF_BIBR-XREF_BIBR ] ."
+#    example: "Bevacizumab binds to VEGF and inhibits VEGF receptor binding"
+#    pattern: |
+#      before:${before_type}
+#      after:${after_type} = conj_and
 
   - name: intrasentence-syntax-event-xcomp-event
     label: ${mylabel}
