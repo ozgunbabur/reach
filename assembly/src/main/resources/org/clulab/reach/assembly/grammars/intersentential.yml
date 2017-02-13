@@ -181,7 +181,7 @@ rules:
     example: "BEFORE. As a consequence, AFTER"
     pattern: |
       before:Event = @Event
-      after:Event = (?<= ^([lemma=as] [lemma=a])? [lemma=/^(consequence|result)$/] []*? "," []*?) @Event
+      after:Event = (?<= ^ ([lemma=as] [lemma=a])? [lemma=/^(consequence|result)$/] []*? "," []*?) @Event
 
   - name: cross-sentence-consequently
     label: ${mylabel}
@@ -192,7 +192,7 @@ rules:
     example: "BEFORE. Consequently, AFTER"
     pattern: |
       before:Event = @Event
-      after:Event = (?<= ^([lemma=consequently] ","?) @Event
+      after:Event = (?<= ^ [lemma=consequently] ","?) @Event
 
 #  - name: cross-sentence-discourse-clue-2
 #    label: ${mylabel}
