@@ -172,6 +172,27 @@ rules:
       before:Event = @Event
       after:Event = (?<= [tag=DT] [!lemma=/^(first|initial)$/] step []*) [mention=Event]+
 
+  - name: cross-sentence-as-a-X
+    label: ${mylabel}
+    priority: ${mypriority}
+    type: "cross-sentence"
+    right-window: 1
+    action: ${myaction}
+    example: "BEFORE. As a consequence, AFTER"
+    pattern: |
+      before:Event = @Event
+      after:Event = (?<= ^([lemma=as] [lemma=a])? [lemma=/^(consequence|result)$/] []*? "," []*?) @Event
+
+  - name: cross-sentence-consequently
+    label: ${mylabel}
+    priority: ${mypriority}
+    type: "cross-sentence"
+    right-window: 1
+    action: ${myaction}
+    example: "BEFORE. Consequently, AFTER"
+    pattern: |
+      before:Event = @Event
+      after:Event = (?<= ^([lemma=consequently] ","?) @Event
 
 #  - name: cross-sentence-discourse-clue-2
 #    label: ${mylabel}
