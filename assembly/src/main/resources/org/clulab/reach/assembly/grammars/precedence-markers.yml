@@ -6,28 +6,6 @@ vars:
   eventpriority: "2"
   regverbaltrigger: [lemma=/^(promote)/]
 
-
-
-
-
-and can
-and subsequent
-that have
-that have been
-sequential
-further
-then [tag=VBZ]
-where it
-where they
-can now
-now
-with and
-in turn
-is then
-
-
-prevented from
-
 rules:
   - name: L2R-marker
     label: E1PrecedesE2Marker
@@ -42,7 +20,7 @@ rules:
       |
       now
       |
-      [tab=VBZ] with and
+      [tag=VBZ] with and
       |
       as well as
       |
