@@ -1,0 +1,25 @@
+# Example: Nutrients and growth factors activate S6K1 by inducing the phosphorylation of threonine 389 in the hydrophobic motif of S6K1.
+
+# output:
+#   S6K1 - Gene_or_gene_product
+#   theorine 389 - Site
+#   phosphorylation of @Site
+
+- name: new_rule_1_syntax
+  label: Phosphorylation
+  priority: 7 # simple events are matched in priority 7. See events_master.yml
+  action: mkBioMention # See mkBioMention() in org.clulab.reach.darpa.DarpaActions
+  pattern: |
+    trigger = phosphorylation
+    theme:Site = >prep_of
+
+# same rule
+#- name: new_rule_1_surface
+#  type: token
+#  label: Phosphorylation
+#  priority: 7 # simple events are matched in priority 7. See events_master.yml
+#  action: mkBioMention # See mkBioMention() in org.clulab.reach.darpa.DarpaActions
+#  pattern: |
+#    (?<trigger> phosphorylation) # capture the trigger
+#    of                           # followed by the word "of"
+#    @theme:Site                  # capture a Site mention as a "theme"
