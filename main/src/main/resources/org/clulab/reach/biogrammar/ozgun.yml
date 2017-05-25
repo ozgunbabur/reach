@@ -23,3 +23,13 @@
 #    (?<trigger> phosphorylation) # capture the trigger
 #    of                           # followed by the word "of"
 #    @theme:Site                  # capture a Site mention as a "theme"
+
+# match an activation event with the phosphorylation found by "new_rule_1_syntax" as the controller
+- name: new_rule_2_syntax
+  label: Positive_activation
+  priority: 10 # see events_master.yml
+  action: mkBioMention # See mkBioMention() in org.clulab.reach.darpa.DarpaActions
+  pattern: |
+    trigger = activate
+    controlled:BioEntity = >dobj
+    controller:PossibleController = >prepc_by >dobj
